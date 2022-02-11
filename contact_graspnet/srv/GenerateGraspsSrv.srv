@@ -1,0 +1,3 @@
+sensor_msgs/PointCloud2 full_pcl
+---
+std_msgs/Int32 result
