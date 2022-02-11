@@ -1,0 +1,7 @@
+pointnet2/*
+results/*
+checkpoints/*
+testing_data/*
+src/contact_graspnet/results/*
+src/contact_graspnet/test_data/*
+src/contact_graspnet/__pycache__*
