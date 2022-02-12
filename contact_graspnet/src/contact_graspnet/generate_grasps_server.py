@@ -11,6 +11,7 @@ from contact_graspnet.srv import GenerateGraspsSrv
 from geometry_msgs.msg import PoseArray
 from sensor_msgs.msg import CameraInfo
 import ros_numpy
+from mlsocket import MLSocket
 
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
@@ -33,7 +34,7 @@ config.gpu_options.per_process_gpu_memory_fraction=0.25
 sess = tf.Session(config=config)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--ckpt_dir', default='../../checkpoints/scene_test_2048_bs3_hor_sigma_001', help='Log dir [default: ../../checkpoints/scene_test_2048_bs3_hor_sigma_001]')
+parser.add_argument('--ckpt_dir', default='../../checkpoints/tiago_weights_0', help='Log dir [default: ../../checkpoints/scene_test_2048_bs3_hor_sigma_001]')
 parser.add_argument('--np_path', default='test_data/7.npy', help='Input data: npz/npy file with keys either "depth" & camera matrix "K" or just point cloud "pc" in meters. Optionally, a 2D "segmap"')
 parser.add_argument('--png_path', default='', help='Input data: depth map png in meters')
 parser.add_argument('--K', default=None, help='Flat Camera Matrix, pass as "[fx, 0, cx, 0, fy, cy, 0, 0 ,1]"')
@@ -80,17 +81,22 @@ def generate_grasps(req):
     # camera matrix from topic '/xtion/depth_registered/camera_info'
     K = [522.1910329546544, 0.0, 320.5, 0.0, 522.1910329546544, 240.5, 0.0, 0.0, 1.0]
 
-    # pc_full, pc_segments, pc_colors = grasp_estimator.extract_point_clouds(depth=pcl, K=K, segmap=None, rgb=None,
-    #                                             skip_border_objects=False)
-
+    
     print('Generating Grasps...')
-    # pred_grasps_cam, scores, contact_pts, _ = grasp_estimator.predict_scene_grasps(sess, pcl, pc_segments=pc_segments,
-    #                                             local_regions=True, filter_grasps=True, forward_passes=1)
+    
+    HOST = '158.176.76.55'
+    PORT = 65432
 
-    pred_grasps_cam, scores, contact_pts, gripper_openings =  grasp_estimator.predict_grasps(sess, pcl, constant_offset=False, 
-                                                                    convert_cam_coords=True, forward_passes=1)
+    # Make an ndarray
+    data = np.load('tiago_pcl.npy')
 
-    return 1
+    # Send data
+    with MLSocket() as s:
+        s.connect((HOST, PORT)) # Connect to the port and host
+        print('sent data!')
+        r = s.send(data) # After sending the data, it will wait until it receives the reponse from the server
+        res = s.recv(1024) # waits for message
+        print(res)
 
 
 
