@@ -7,9 +7,13 @@ import time
 import cv2
 import tensorflow.compat.v1 as tf
 from mlsocket import MLSocket
-
-HOST = '158.176.76.55'
-PORT = 65432
+import socket
+from time import sleep
+import errno
+from npsocket import SocketNumpyArray
+import struct
+import json
+import pickle
 
 tf.disable_eager_execution()
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -24,7 +28,7 @@ from contact_grasp_estimator import GraspEstimator
 # from visualization_utils import visualize_grasps, show_image
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--ckpt_dir', default='../checkpoints/scene_test_2048_bs3_hor_sigma_001', help='Log dir [default: checkpoints/scene_test_2048_bs3_hor_sigma_001]')
+parser.add_argument('--ckpt_dir', default='../../checkpoints/tiago_weights_0', help='Log dir [default: checkpoints/scene_test_2048_bs3_hor_sigma_001]')
 parser.add_argument('--np_path', default='test_data/7.npy', help='Input data: npz/npy file with keys either "depth" & camera matrix "K" or just point cloud "pc" in meters. Optionally, a 2D "segmap"')
 parser.add_argument('--png_path', default='', help='Input data: depth map png in meters')
 parser.add_argument('--K', default=None, help='Flat Camera Matrix, pass as "[fx, 0, cx, 0, fy, cy, 0, 0 ,1]"')
@@ -54,63 +58,50 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.2
 sess = tf.Session(config=config)
 
 # Load weights
-grasp_estimator.load_weights(sess, saver, '../checkpoints/scene_test_2048_bs3_hor_sigma_001', mode='test')
+# grasp_estimator.load_weights(sess, saver, '../../checkpoints/training4', mode='test') 
+grasp_estimator.load_weights(sess, saver, '../../checkpoints/scene_test_2048_bs3_hor_sigma_001', mode='test') 
 
-def inference(global_config, checkpoint_dir, pcl, K=None, local_regions=True, skip_border_objects=False, filter_grasps=True, segmap_id=None, z_range=[0.2,1.8], forward_passes=1):
-    """
-    Predict 6-DoF grasp distribution for given model and input data
-    
-    :param global_config: config.yaml from checkpoint directory
-    :param checkpoint_dir: checkpoint directory
-    :param input_paths: .png/.npz/.npy file paths that contain depth/pointcloud and optionally intrinsics/segmentation/rgb
-    :param K: Camera Matrix with intrinsics to convert depth to point cloud
-    :param local_regions: Crop 3D local regions around given segments. 
-    :param skip_border_objects: When extracting local_regions, ignore segments at depth map boundary.
-    :param filter_grasps: Filter and assign grasp contacts according to segmap.
-    :param segmap_id: only return grasps from specified segmap_id.
-    :param z_range: crop point cloud at a minimum/maximum z distance from camera to filter out outlier points. Default: [0.2, 1.8] m
-    :param forward_passes: Number of forward passes to run on each point cloud. Default: 1
-    """
-
-    # Load weights
-    # grasp_estimator.load_weights(sess, saver, checkpoint_dir, mode='test')
-    # pc_segments = {}
-    # segmap, rgb, depth, cam_K, pc_full, pc_colors = load_available_input_data(pcl, K=K)
-    
-    # if segmap is None and (local_regions or filter_grasps):
-    #     raise ValueError('Need segmentation map to extract local regions or filter grasps')
-
-    # if pc_full is None:
-    #     print('Converting depth to point cloud(s)...')
-    #     pc_full, pc_segments, pc_colors = grasp_estimator.extract_point_clouds(depth, cam_K, segmap=segmap, rgb=rgb,
-    #                                                                             skip_border_objects=skip_border_objects, z_range=z_range)
-
-    # print('Generating Grasps...')
-    # pred_grasps_cam, scores, contact_pts, _ = grasp_estimator.predict_scene_grasps(sess, pc_full, pc_segments=pc_segments, 
-    #                                                                                 local_regions=local_regions, filter_grasps=filter_grasps, forward_passes=forward_passes)
-    K = [522.1910329546544, 0.0, 320.5, 0.0, 522.1910329546544, 240.5, 0.0, 0.0, 1.0]
-    pred_grasps_cam, scores, pred_points, gripper_openings = grasp_estimator.predict_grasps(sess, pcl, constant_offset=False, convert_cam_coords=True, forward_passes=1)       
-
+      
         
 if __name__ == "__main__":
 
-    address = ''
-    data = []
-    print(str(global_config))
+    # print(str(global_config))
     print('pid: %s'%(str(os.getpid())))
+
+    HOST = '158.176.76.55'
+    REMOTE_HOST = '31.205.214.65'
+    PORT = 9997
+
 
     with MLSocket() as s:
         s.bind((HOST, PORT))
-        s.listen()
-        conn, address = s.accept()
-        with conn:
-            data = conn.recv(1024)
+        while True:
+            s.listen()
+            conn, address = s.accept()
 
-            # pcl = inference(global_config, FLAGS.ckpt_dir, data, z_range=eval(str(FLAGS.z_range)),
-            #             K=FLAGS.K, local_regions=FLAGS.local_regions, filter_grasps=FLAGS.filter_grasps, segmap_id=FLAGS.segmap_id, 
-            #             forward_passes=FLAGS.forward_passes, skip_border_objects=FLAGS.skip_border_objects)
-            pred_grasps_cam, scores, pred_points, gripper_openings = grasp_estimator.predict_grasps(sess, data, constant_offset=False, convert_cam_coords=True, forward_passes=1)
-            conn.send(pred_grasps_cam)
+            with conn:
+                pcl_msg = conn.recv(1024) # This will block until it receives all the data send by the client, with the step size of 1024 bytes.
+                print(pcl_msg.shape)
+                # pc_segments = {}
+                # segmap, rgb, depth, cam_K, pc_full, pc_colors = load_available_input_data(pcl_msg, K=None)
+                
+                # if segmap is None and (local_regions or filter_grasps):
+                #     raise ValueError('Need segmentation map to extract local regions or filter grasps')
 
+                # cam_K = [522.1910329546544, 0.0, 320.5, 0.0, 522.1910329546544, 240.5, 0.0, 0.0, 1.0]
+                # K=np.ndarray((3,3), buffer=np.array(cam_K))
+                # if pc_full is None:
+                #     print('Converting depth to point cloud(s)...')
+                    # pc_full, pc_segments, pc_colors = grasp_estimator.extract_point_clouds(pcl_msg, K=K, segmap=None, rgb=None, skip_border_objects=False)
+
+                print('Generating Grasps...')
+                # pred_grasps_cam, scores, contact_pts, _ = grasp_estimator.predict_scene_grasps(sess, pc_full, pc_segments=pc_segments, 
+                #                                                                           local_regions=True, filter_grasps=True, forward_passes=1)
+                
+                pred_grasps_cam, scores, pred_points, gripper_openings = grasp_estimator.predict_grasps(sess, pcl_msg, constant_offset=False, convert_cam_coords=True, forward_passes=1)
+
+                # send back grasps to client
+                conn.send(pred_grasps_cam)
 
         
+                
