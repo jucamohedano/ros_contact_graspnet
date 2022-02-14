@@ -11,12 +11,17 @@ if __name__ == '__main__':
 
     sm = smach.StateMachine(outcomes=['succeeded','failed', 'end'])
 
-    smach.StateMachine.add('Pickup', PickObject(planning_scene, arm_torso_controller), 
+    smach.StateMachine.add('GenerateGrasps', GenerateGrasps(),
+                            transitions={
+                                'succeeded': 'Pickup',
+                                'failed': 'Recovery'}, 
+                            remapping={})
+    smach.StateMachine.add('Pickup', Pickup(),
                             transitions={
                                 'succeeded': 'Dropoff',
                                 'failed': 'Recovery'}, 
                             remapping={})
-    smach.StateMachine.add('Dropoff', GoToDropOff(), 
+    smach.StateMachine.add('Dropoff', DropOff(),
                             transitions={
                                 'succeeded': 'Finish',
                                 'failed': 'Finish'}, 
@@ -26,7 +31,7 @@ if __name__ == '__main__':
                                 'succeeded' : 'Finish',
                                 'failed': 'Finish'},
                             remapping={})
-    smach.StateMachine.add('Finish', Recovery(),
+    smach.StateMachine.add('Finish', Finish(),
                             transitions={
                                 'end' : 'end'},
                             remapping={})
