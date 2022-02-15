@@ -1,6 +1,5 @@
 import rospy
-from contact_graspnet.srv import GenerateGrasps, GenerateGraspsResponse
-from actionlib import SimpleActionClient
+from contact_graspnet.srv import GenerateGraspsSrv, GenerateGraspsSrvResponse
 
 
 def detect_objs():
