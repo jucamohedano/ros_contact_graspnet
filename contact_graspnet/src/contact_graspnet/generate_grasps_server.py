@@ -2,24 +2,15 @@
 
 import os
 import sys
-import argparse
 import numpy as np
-import time
-import cv2
 import rospy
-from contact_graspnet.srv import GenerateGraspsSrv, TfTransform, TfTransformRequest
+from contact_graspnet.srv import GenerateGraspsSrv, GenerateGraspsSrvResponse, TfTransform, TfTransformRequest
 from geometry_msgs.msg import PoseArray
 from sensor_msgs.msg import CameraInfo
 import ros_numpy
 from mlsocket import MLSocket
-import socket
-from npsocket import SocketNumpyArray
-import struct
-import pickle
-from numpySocket import NumpySocket
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
-from visualization_msgs.msg import Marker
 from utilities.transformations import *
 
 # publisher of grasps. 200 grasps generated
@@ -36,6 +27,13 @@ def generate_grasps(req):
     pcl = ros_numpy.numpify(req.full_pcl)
     pcl = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1) # 3x_ matrix
 
+    # process each object pcl
+    pc_segments={}
+    for i, object_pcl in enumerate(req.objects_pcl):
+        obj_np = ros_numpy.numpify(object_pcl)
+        obj_np = np.concatenate( (obj_np['x'].reshape(-1,1), obj_np['y'].reshape(-1,1), obj_np['z'].reshape(-1,1)), axis=1)
+        pc_segments[i] = obj_np
+
     # camera matrix from topic '/xtion/depth_registered/camera_info'
     K = [522.1910329546544, 0.0, 320.5, 0.0, 522.1910329546544, 240.5, 0.0, 0.0, 1.0]
 
@@ -43,14 +41,40 @@ def generate_grasps(req):
     with MLSocket() as s:
         s.connect((REMOTE_HOST, PORT)) # Connect to the port and host
         s.sendall(pcl) # After sending the data, it will wait until it receives the reponse from the server
+        s.sendall(pc_segments)
         grasps = s.recv(1024)
-    # print(grasps)
-    grasps_pose_array = convert_opencv_to_tiago(frame_id, grasps)
-    grasps_all_pub.publish(grasps_pose_array)
 
-    return 1
+    #TODO: update remote server to return scores
+    
+    response = GenerateGraspsSrvResponse()
+    pose_array_full = None
 
-def convert_opencv_to_tiago(frame_id, grasps):
+
+    for i in range(len(req.objects_pcl)):
+        pc_seg_map = tf_transform('map', pointcloud=req.objects_pcl[i]).target_pointcloud
+        pc_seg_map = ros_numpy.numpify(pc_seg_map)
+        
+        if i in grasps:
+            pose_array = convert_nv_labs_to_tiago(frame_id, grasps[i])
+
+            response.all_grasp_poses.append(pose_array)
+
+
+            if pose_array_full is None:
+                pose_array_full = deepcopy(pose_array) # first iteration pose_array_full is None
+            else:
+                pose_array_full.poses += pose_array.poses
+        else: # empty grasps
+            response.all_grasp_poses.append(PoseArray())
+            response.all_scores.append(0.)
+
+    if pose_array_full:
+        grasps_all_pub.publish(pose_array_full)
+
+
+    return response
+
+def convert_nv_labs_to_tiago(frame_id, grasps):
     # change coords from NVLabs to Tiago gripper
     pose_array = PoseArray(header=Header(frame_id=frame_id, stamp=rospy.get_rostime()))
 
@@ -84,11 +108,29 @@ def convert_opencv_to_tiago(frame_id, grasps):
         pose_array.poses.append(pose_180)
     return pose_array
 
+def tf_transform(target_frame, pose_array=None, pointcloud=None):
+    assert pose_array is not None or pointcloud is not None
+
+    # print('about to transform to ' + target_frame)
+    rospy.wait_for_service('tf_transform', timeout=10)
+    try:
+        tf_transform_srv = rospy.ServiceProxy('tf_transform', TfTransform)
+        request = TfTransformRequest()
+        if pose_array is not None:
+            request.pose_array = pose_array
+        if pointcloud is not None:
+            request.pointcloud = pointcloud
+        request.target_frame.data = target_frame
+        response = tf_transform_srv(request)
+        # print('transform done!')
+        return response
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
 
 if __name__ == '__main__':
     rospy.init_node('contact_graspnet_server', anonymous=True)
     try:
-        s = rospy.Service('generate_grasps_service', GenerateGraspsSrv, generate_grasps)
+        s = rospy.Service('generate_grasps_server', GenerateGraspsSrv, generate_grasps)
         print("Ready to generate grasps poses")
     except KeyboardInterrupt:
         sys.exit()
