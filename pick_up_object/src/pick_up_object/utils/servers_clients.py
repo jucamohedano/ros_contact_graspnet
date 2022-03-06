@@ -7,7 +7,7 @@ from pick_up_object.srv import DetectObjects
 from moveit_msgs.msg import CollisionObject
 from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
-import actionlib
+from actionlib
 
 
 def detect_objs():
@@ -122,3 +122,21 @@ def add_collision_object(self, object_cloud, num_primitives = 200):
     self.planning_scene.add_object(co)
     rospy.sleep(5.0)
     return co
+
+def play_motion_action(action='home'):
+    pm_client = actionlib.SimpleActionClient('/play_motion', PlayMotionAction)
+    pm_client.wait_for_server()
+    goal = PlayMotionGoal()
+    goal.motion_name = action
+    goal.skip_planning = False
+    goal.priority = 0  # Optional
+
+    print("Sending goal with motion: " + action)
+    pm_client.send_goal(goal)
+
+    print("Waiting for result...")
+    action_ok = pm_client.wait_for_result(rospy.Duration(30.0))
+
+    state = pm_client.get_state()
+
+    return action_ok and state == actionlib.GoalStatus.SUCCEEDED
