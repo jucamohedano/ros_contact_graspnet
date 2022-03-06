@@ -12,9 +12,9 @@ from geometry_msgs.msg import PoseArray, Pose
 from sensor_msgs.msg import PointCloud2
 import ros_numpy
 from std_msgs.msg import Header
-from utilities.transformations import *
+from utils.transformations import *
 from copy import deepcopy
-from contact_graspnet.utilities import tf_transform
+from contact_graspnet.utils import tf_transform
 
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
@@ -117,6 +117,7 @@ def generate_grasps(req):
 
         if i in pred_grasps_cam:
             pose_array = convert_opencv_to_tiago(frame_id, pred_grasps_cam[i])
+            pose_array = shift_grasps_ee(pose_array)
             # pose_array = tf_transform('base_footprint', pose_array).target_pose_array
             response.all_grasp_poses.append(pose_array)
             # response.all_scores.append(np.nanmean(scores[i]) if len(scores[i]) else 0.)
@@ -176,6 +177,26 @@ def convert_opencv_to_tiago(frame_id, grasps):
 
         pose_array.poses.append(pose)
         pose_array.poses.append(pose_180)
+    return pose_array
+
+def shift_grasps_ee(pose_array_in, delta=-0.1):
+    pose_array = deepcopy(pose_array_in)
+    # pose_array = tf_transform('base_footprint', pose_array).target_pose_array
+    for pose in pose_array.poses:
+        # print('x: {}, y: {}, z: {}'.format(pose.position.x, pose.position.y, pose.position.z))
+        q_orien = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+        euler = euler_from_quaternion(q_orien)
+        euler_m = euler_matrix(*euler)
+
+        # print('{} {} {}'.format(pose.position.x, pose.position.y, pose.position.z))
+        # print('{} {} {}'.format(euler_m[0, 0], euler_m[0, 1], euler_m[0, 2]))
+
+        pose.position.x += delta * euler_m[0, 0]
+        pose.position.y += delta * euler_m[1, 0]
+        pose.position.z += delta * euler_m[2, 0]
+        # print('x: {}, y: {}, z: {}'.format(pose.position.x, pose.position.y, pose.position.z))
+
+    pose_array = tf_transform('base_footprint', pose_array).target_pose_array
     return pose_array
 
 if __name__ == '__main__':
