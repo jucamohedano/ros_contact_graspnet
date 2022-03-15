@@ -58,8 +58,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
  add_service_files(
    FILES
-   GenerateGraspsSrv.srv
-   
+   GenerateGrasps.srv
+   DetectObjects.srv
+   TfTransform.srv
  )
 
 ## Generate actions in the 'action' folder
