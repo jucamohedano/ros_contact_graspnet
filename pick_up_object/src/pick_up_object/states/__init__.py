@@ -6,7 +6,7 @@ from detect_objects import DetectObjects
 
 
 __all__ = [
+    'DetectObjects',
     'GenerateGrasps',
     'Pickup',
-    'Dropoff',
     'Recovery']
