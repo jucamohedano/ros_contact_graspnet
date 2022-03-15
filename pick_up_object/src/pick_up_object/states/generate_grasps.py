@@ -22,21 +22,14 @@ class GenerateGrasps(smach.State):
 
 
     def execute(self, userdata):
-        # rosnode.kill_nodes('maskRCNN_detection')
-        # call(["rosnode", "kill", "maskRCNN_detection"], shell=True)
-        # os.system("rosnode kill maskRCNN_detection")
-
+        
         userdata.prev = 'GenerateGrasps'
-
         objs_resp = userdata.objs_resp 
 
         grasps_resp = generate_grasps(objs_resp.full_pcl, objs_resp.object_clouds)
         self.try_num += 1
 
         pose_count = np.sum([len(grasp_poses.poses) for grasp_poses in grasps_resp.all_grasp_poses])
-
-        # f_pose_count = np.sum([len(grasp_poses.poses) for grasp_poses in grasps_resp.filtered_grasp_poses])
-        # print('pose_count: {}, f_pose_count: {}'.format(pose_count, f_pose_count))
         if pose_count > 0:
             userdata.grasps_resp = grasps_resp
             return 'succeeded'
