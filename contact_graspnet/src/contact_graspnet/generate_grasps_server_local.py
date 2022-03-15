@@ -4,38 +4,44 @@ import os
 import sys
 import argparse
 import numpy as np
-import time
-import cv2
 import rospy
-from contact_graspnet.srv import GenerateGraspsSrv, GenerateGraspsSrvResponse
-from geometry_msgs.msg import PoseArray, Pose
-from sensor_msgs.msg import PointCloud2
+import tensorflow.compat.v1 as tf
+import config_utils
+import rospkg
 import ros_numpy
+
+from contact_graspnet.srv import GenerateGrasps, GenerateGraspsResponse
+from geometry_msgs.msg import PoseArray, Pose
 from std_msgs.msg import Header
-from utils.transformations import *
+from utils.transformations import * # python3 can't import tf.transformations
 from copy import deepcopy
 from contact_graspnet.utils import tf_transform
+from contact_grasp_estimator import GraspEstimator
 
-import tensorflow.compat.v1 as tf
-tf.disable_eager_execution()
-tf.disable_v2_behavior()
-
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# ---------------------
+# Set tensorflow params
+# ---------------------
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(BASE_DIR))
-import config_utils
-import rospkg
-from contact_grasp_estimator import GraspEstimator
+
+tf.disable_eager_execution()
+tf.disable_v2_behavior()
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+
 
 # Create a session
 config = tf.ConfigProto()
-config.gpu_options.allow_growth = False
+config.gpu_options.allow_growth = True
 config.allow_soft_placement = True
-config.gpu_options.per_process_gpu_memory_fraction=0.25
+# config.gpu_options.per_process_gpu_memory_fraction=0.2 # applies to my GPU -- 3060 RTX
 sess = tf.Session(config=config)
 
+# ---------------------------------
+# set contact graspnet model config
+# ---------------------------------
 model_path = os.path.join(rospkg.RosPack().get_path('contact_graspnet'), 'checkpoints')
 print(model_path)
 
@@ -69,18 +75,24 @@ grasp_estimator.build_network()
 # Add ops to save and restore all the variables.
 saver = tf.train.Saver(save_relative_paths=True)
 
-# Load weights
-print('loading weights...')
-grasp_estimator.load_weights(sess, saver, checkpoint_dir, mode='test')
-print('weights loaded!')
-
 # publisher of grasps. 200 grasps generated
 grasps_all = rospy.Publisher('grasps_all', PoseArray, queue_size=200, latch=True)
 
+print('loading weights...')
+grasp_estimator.load_weights(sess, saver, checkpoint_dir, mode='test')
 
 
+# callback function in generating grasps service
 def generate_grasps(req):
+    """
+    Arguments:
+        req {GenerateGrasps} -- message container full_pcl and objs_pcl
+    Return:
+        response {GenerateGraspsResponse} -- number_objects, all_grasp_poses, grasp_contact_points, object_heights, all_scores 
+    """
+    
     frame_id = req.full_pcl.header.frame_id
+
     # reshape pcl to be in the right form to be processed
     pcl = ros_numpy.numpify(req.full_pcl)
     pcl_np = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
@@ -95,18 +107,15 @@ def generate_grasps(req):
     # camera matrix from topic '/xtion/depth_registered/camera_info'
     # K = [522.1910329546544, 0.0, 320.5, 0.0, 522.1910329546544, 240.5, 0.0, 0.0, 1.0]
 
-    # pc_full, pc_segments, pc_colors = grasp_estimator.extract_point_clouds(depth=pcl, K=K, segmap=None, rgb=None,
-    #                                             skip_border_objects=False)
+
+    response = GenerateGraspsResponse()
+    pose_array_full = None
 
     print('Generating Grasps...')
-    # pred_grasps_cam, scores, contact_pts, _ = grasp_estimator.predict_scene_grasps(sess, pcl, pc_segments=pc_segments,
-    #                                             local_regions=True, filter_grasps=True, forward_passes=1)
-    response = GenerateGraspsSrvResponse()
-    pose_array_full = None
-    # pred_grasps_cam, scores, contact_pts, gripper_openings =  grasp_estimator.predict_grasps(sess, pcl, constant_offset=False, 
-    #                                                                 convert_cam_coords=True, forward_passes=1)
-
-    pred_grasps_cam, scores, contacts, openings = grasp_estimator.predict_scene_grasps(sess, pc_full=pcl_np, pc_segments=objs_np, local_regions=True, filter_grasps=False, forward_passes=1)
+    pred_grasps_cam, scores, contacts, openings = grasp_estimator.predict_scene_grasps(sess, pc_full=pcl_np, 
+                                                                                        pc_segments=objs_np, local_regions=True, 
+                                                                                        filter_grasps=True, forward_passes=1)
+    # loop through each object's pcl and adjust predicted grasps                                                                                  
     for i in range(len(req.objects_pcl)):
         pc_seg_map = tf_transform('map', pointcloud=req.objects_pcl[i]).target_pointcloud
         pc_seg_map = ros_numpy.numpify(pc_seg_map)
@@ -116,11 +125,10 @@ def generate_grasps(req):
         response.object_heights.append(object_height)
 
         if i in pred_grasps_cam:
-            pose_array = convert_opencv_to_tiago(frame_id, pred_grasps_cam[i])
+            pose_array = convert_opencv_to_tiago(frame_id=frame_id, grasps=pred_grasps_cam[i])
             pose_array = shift_grasps_ee(pose_array)
             # pose_array = tf_transform('base_footprint', pose_array).target_pose_array
             response.all_grasp_poses.append(pose_array)
-            # response.all_scores.append(np.nanmean(scores[i]) if len(scores[i]) else 0.)
             response.all_scores.append(np.nanmean(scores[i]) if np.nanmean(scores[i]) != np.nan else 0.)
             if np.isnan(np.nanmean(scores[i])):
                 print(scores[i])
@@ -136,21 +144,26 @@ def generate_grasps(req):
             response.all_scores.append(0.)
 
     if pose_array_full:
-        # p = PoseArray()
-        # p.header = pose_array_full.header
-        # p.poses = pose_array_full.poses[:20]
-        # grasps_all.publish(p)
         grasps_all.publish(pose_array_full)
 
     print('generated grasps!')
     return response
 
+
 def convert_opencv_to_tiago(frame_id, grasps):
+    """
+    Arguments:
+        frame_id {frame id} -- target coordinate frame to convert to
+        grasps {array} -- array containing all grasps for an object
+    Return:
+        pose_array {PoseArrray} -- PoseArray of grasps
+    """
+
     # change coords from NVLabs to Tiago gripper
     pose_array = PoseArray(header=Header(frame_id=frame_id, stamp=rospy.get_rostime()))
 
-    q_rot = quaternion_from_euler(-math.pi/2., -math.pi/2., 0., 'sxyz')
-    q_rot_180 = quaternion_from_euler(math.pi, 0., 0., 'sxyz')
+    q_rot = quaternion_from_euler(-math.pi/2., -math.pi/2., 0., 'sxyz') # rotation 1
+    q_rot_180 = quaternion_from_euler(math.pi, 0., 0., 'sxyz') # rotation 2
 
     for grasp in grasps:
         quat = quaternion_from_matrix(grasp)
@@ -179,8 +192,16 @@ def convert_opencv_to_tiago(frame_id, grasps):
         pose_array.poses.append(pose_180)
     return pose_array
 
-def shift_grasps_ee(pose_array_in, delta=-0.1):
-    pose_array = deepcopy(pose_array_in)
+
+def shift_grasps_ee(original_pose_array, delta=-0.025):
+    """
+    Arguments 
+        original_pose_array {PoseArray}
+        delta {float} -- negative offset by which grasps are moved backwards 
+    """
+
+
+    pose_array = deepcopy(original_pose_array)
     # pose_array = tf_transform('base_footprint', pose_array).target_pose_array
     for pose in pose_array.poses:
         # print('x: {}, y: {}, z: {}'.format(pose.position.x, pose.position.y, pose.position.z))
@@ -190,19 +211,21 @@ def shift_grasps_ee(pose_array_in, delta=-0.1):
 
         # print('{} {} {}'.format(pose.position.x, pose.position.y, pose.position.z))
         # print('{} {} {}'.format(euler_m[0, 0], euler_m[0, 1], euler_m[0, 2]))
-
+        
         pose.position.x += delta * euler_m[0, 0]
         pose.position.y += delta * euler_m[1, 0]
         pose.position.z += delta * euler_m[2, 0]
         # print('x: {}, y: {}, z: {}'.format(pose.position.x, pose.position.y, pose.position.z))
 
+    # grasps are rotated by in camera frame, so we have to convert them into base_footprint frame
     pose_array = tf_transform('base_footprint', pose_array).target_pose_array
     return pose_array
+
 
 if __name__ == '__main__':
     rospy.init_node('contact_graspnet_server', anonymous=True)
     try:
-        s = rospy.Service('generate_grasps_server', GenerateGraspsSrv, generate_grasps)
+        s = rospy.Service('generate_grasps_server', GenerateGrasps, generate_grasps)
         print("Ready to generate grasps poses")
     except KeyboardInterrupt:
         sys.exit()
