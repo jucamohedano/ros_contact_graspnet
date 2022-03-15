@@ -1,16 +1,28 @@
+#!/usr/bin/env python
+
 import rospy
 import numpy as np
-from contact_graspnet.srv import GenerateGraspsSrv, GenerateGraspsSrvResponse, TfTransform, TfTransformRequest
+import tf2_ros
+import tf2_geometry_msgs
+import actionlib
+
+from pick_up_object.srv import GenerateGrasps, TfTransform, TfTransformRequest, DetectObjects
 from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
 from geometry_msgs.msg import Pose, PoseArray
-from pick_up_object.srv import DetectObjects
 from moveit_msgs.msg import CollisionObject
 from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
-from actionlib
+from geometry_msgs.msg import PoseStamped
 
 
 def detect_objs():
+    """
+        Calls detection server (Mask-RCNN)
+
+        Return:
+            detection {DetectObjects}
+    """
+
     print('waiting for detect_objects')
     rospy.wait_for_service('detect_objects', timeout=10)
     try:
@@ -22,10 +34,19 @@ def detect_objs():
         print("Service call failed: %s"%e)
 
 def generate_grasps(full_pcl, objs_pcl):
+    """
+    Arguments:
+        full_pcl {PointCloud} -- full point cloud of the scene
+        objs_pcl {dict of PointClouds} -- dictionary with each segmented object pointcloud
+    
+    Return:
+        grasps {GenerateGrasps} -- array of grasps
+    """
+
     print('waiting for generate_grasps_server')
-    rospy.wait_for_service('generate_grasps_server', timeout=10)
+    rospy.wait_for_service('generate_grasps_server', timeout=20)
     try:
-        grasp_poses = rospy.ServiceProxy('generate_grasps_server', GenerateGraspsSrv)
+        grasp_poses = rospy.ServiceProxy('generate_grasps_server', GenerateGrasps)
         resp = grasp_poses(full_pcl, objs_pcl)
         print('generates grasps done!')
         return resp
@@ -33,17 +54,31 @@ def generate_grasps(full_pcl, objs_pcl):
         print("Service call failed: %s"%e)
 
 def clear_octomap():
+    """
+        Clears octomap using clear_octomap server
+    """
+
     print('waiting for clear_octomap')
     rospy.wait_for_service('clear_octomap', timeout=10)
     try:
         clear_octo = rospy.ServiceProxy('clear_octomap', Empty)
-        resp1 = clear_octo()
+        response = clear_octo()
         print('clearing octomap done!')
-        return resp1
+        return response
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
 def tf_transform(target_frame, pose_array=None, pointcloud=None):
+    """
+    Arguments:
+        target_frame {frame_id} -- frame to transform to
+        pose_array {PoseArray} -- array of poses
+        pointcloud {PointCloud2}
+    
+    Returns:
+        response {TfTransformResponse} -- target_pose_array {PoseArray}, target_pointcloud {PointCloud2}
+    """
+
     assert pose_array is not None or pointcloud is not None
 
     # print('about to transform to ' + target_frame)
@@ -62,8 +97,29 @@ def tf_transform(target_frame, pose_array=None, pointcloud=None):
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
+def to_frame_pose(self, pose, source_frame='xtion_depth_optical_frame', target_frame='base_footprint'):
+    """
+    Arguments:
+        pose {Pose} -- pose to convert
+        source_frame {frame id} -- original coordinate frame
+        target_frame {frame id} -- target coordinate frame
+    Return:
+        pose {Pose} -- target pose
+    """
+    
+    # remove '/' from source_frame and target frame to avoid tf2.InvalidArgumentException
+    source_frame = source_frame.replace('/', '')
+    target_frame = target_frame.replace('/', '')
+    try:
+        transformation = self.tfBuffer.lookup_transform(target_frame, source_frame,
+        rospy.Time(0), rospy.Duration(0.1))
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+        print(e)
+    
+    pose = tf2_geometry_msgs.do_transform_pose(PoseStamped(pose=pose), transformation).pose
+    return pose
 
-def add_collision_object(self, object_cloud, num_primitives = 200):
+def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
     """
     adds collision object to the planning scene created by moveit
 
@@ -90,15 +146,14 @@ def add_collision_object(self, object_cloud, num_primitives = 200):
     # add collision object to planning scene
     co = CollisionObject()
     co.id = 'object'
-    # co.operation = CollisionObject.ADD
 
+    # create collision object
     primitive = SolidPrimitive()
     primitive.type = primitive.BOX
     primitive.dimensions = [0.02, 0.02, 0.02]
 
     indices = np.random.choice(range(pcl.shape[0]), size=np.min([num_primitives, pcl.shape[0]]), replace=False)
-
-    pose_array = PoseArray(header=object_cloud.header)
+    pose_array = PoseArray()
 
     for i in indices:
         x,y,z = cloud_obj[i]
@@ -113,17 +168,25 @@ def add_collision_object(self, object_cloud, num_primitives = 200):
 
         co.primitives.append(primitive)
         pose_array.poses.append(primitive_pose)
-    
-    pose_array = tf_transform(pose_array)
-    co.header = pose_array.header
+
+    # pose_array = tf_transform(pose_array)
+    co.header = object_cloud.header
     co.primitive_poses = pose_array.poses
 
-    # self.co_pub.publish(co)
-    self.planning_scene.add_object(co)
-    rospy.sleep(5.0)
+    planning_scene.add_object(co)
+    rospy.sleep(2.0)
     return co
 
 def play_motion_action(action='home'):
+    """
+    Arguments:
+        action {String} -- predefined actions
+
+    Return:
+        bool -- action statusf 
+    """
+
+
     pm_client = actionlib.SimpleActionClient('/play_motion', PlayMotionAction)
     pm_client.wait_for_server()
     goal = PlayMotionGoal()
@@ -138,5 +201,10 @@ def play_motion_action(action='home'):
     action_ok = pm_client.wait_for_result(rospy.Duration(30.0))
 
     state = pm_client.get_state()
-
+    if action_ok:
+        print("Action finished succesfully with state: " + str(actionlib.GoalStatus.to_string(state)))
+    else:
+        rospy.logwarn("Action failed with state: " + str(actionlib.GoalStatus.to_string(state)))
+    
+    print(action_ok and state == actionlib.GoalStatus.SUCCEEDED)
     return action_ok and state == actionlib.GoalStatus.SUCCEEDED
