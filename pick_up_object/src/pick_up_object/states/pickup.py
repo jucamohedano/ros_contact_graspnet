@@ -91,7 +91,6 @@ class Pickup(smach.State):
                     shift -= 0.03
 
             del config['planning_attempts']
-            del config['planning_attempts']
             self.arm_torso_controller.configure_planner(config)
 
             rospy.sleep(5.)
