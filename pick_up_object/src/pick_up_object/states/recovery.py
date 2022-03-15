@@ -1,7 +1,6 @@
 #!/usr/bin/python
-import rospy
+
 import smach
-from pick_and_pack_task.utilities import play_motion_action
 
 class Recovery(smach.State):
     
