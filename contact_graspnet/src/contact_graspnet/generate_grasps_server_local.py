@@ -46,7 +46,7 @@ model_path = os.path.join(rospkg.RosPack().get_path('contact_graspnet'), 'checkp
 print(model_path)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--ckpt_dir', default=model_path+'/tiago_weights_1', help='Log dir [default: ../../checkpoints/scene_test_2048_bs3_hor_sigma_001]')
+parser.add_argument('--ckpt_dir', default=model_path+'/scene_test_2048_bs3_hor_sigma_001', help='Log dir [default: ../../checkpoints/scene_test_2048_bs3_hor_sigma_001]')
 parser.add_argument('--np_path', default='test_data/7.npy', help='Input data: npz/npy file with keys either "depth" & camera matrix "K" or just point cloud "pc" in meters. Optionally, a 2D "segmap"')
 parser.add_argument('--png_path', default='', help='Input data: depth map png in meters')
 parser.add_argument('--K', default=None, help='Flat Camera Matrix, pass as "[fx, 0, cx, 0, fy, cy, 0, 0 ,1]"')

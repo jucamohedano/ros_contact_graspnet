@@ -5,3 +5,4 @@ from pick_up_object.utils.servers_clients import clear_octomap
 from pick_up_object.utils.servers_clients import play_motion_action
 from pick_up_object.utils.servers_clients import add_collision_object
 from pick_up_object.utils.servers_clients import to_frame_pose
+from pick_up_object.utils.planning_scene_interface import PlanningSceneInterface

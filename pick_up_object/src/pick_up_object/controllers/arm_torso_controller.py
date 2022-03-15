@@ -16,9 +16,8 @@ from moveit_msgs.msg import PlanningSceneComponents, PlanningScene, PlanningScen
 from moveit_msgs.srv import GetPlanningScene, ApplyPlanningScene, ApplyPlanningSceneRequest
 from actionlib import SimpleActionClient
 from play_motion_msgs.msg import PlayMotionAction
-from lasr_place_object.msg import *
 from tf.transformations import euler_from_quaternion, euler_matrix
-from pick_up_object.utils import to_frame_pose
+from pick_up_object.utils import to_frame_pose, PlanningSceneInterface
 
 class ArmTorsoController:
     def __init__(self):
@@ -31,7 +30,7 @@ class ArmTorsoController:
         self._move_group = self._robot.get_group(group_name)
 
         self._joints = self._move_group.get_joints()
-        self._scene = moveit_commander.PlanningSceneInterface()
+        self._scene = PlanningSceneInterface()
         self.tfBuffer = tf2_ros.Buffer()
         # self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.debug_pose = rospy.Publisher('debug_plan_pose', PoseStamped, queue_size=1, latch=True)

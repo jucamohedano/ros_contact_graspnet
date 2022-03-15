@@ -1,1 +1,1 @@
-from contact_graspnet.utilities.server_clients import tf_transform
+from contact_graspnet.utils.server_clients import tf_transform
