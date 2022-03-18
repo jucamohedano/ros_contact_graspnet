@@ -73,7 +73,7 @@ MODEL:
     dropout_keep: 0.7
   joint_heads: false
   asymmetric_model: true
-  model: contact_graspnet
+  model: contact_graspnet_model
   pointnet_fp_modules:
   - mlp:
     - 256

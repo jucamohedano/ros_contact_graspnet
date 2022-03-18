@@ -1,0 +1,8 @@
+sensor_msgs/PointCloud2 full_pcl
+sensor_msgs/PointCloud2[] objects_pcl
+---
+uint8 number_objects
+geometry_msgs/PoseArray[] all_grasp_poses
+geometry_msgs/PointStamped[] grasp_contact_points
+float32[] object_heights
+float32[] all_scores
