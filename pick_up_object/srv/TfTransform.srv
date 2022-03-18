@@ -1,0 +1,6 @@
+geometry_msgs/PoseArray pose_array
+sensor_msgs/PointCloud2 pointcloud
+std_msgs/String target_frame
+---
+geometry_msgs/PoseArray target_pose_array
+sensor_msgs/PointCloud2 target_pointcloud

@@ -1,0 +1,5 @@
+<launch>
+    <!-- <node pkg="contact_graspnet" name="tf_tran sform" type="tf_transform.py" required="true" output="screen"/> -->
+    <node pkg="contact_graspnet" name="contact_graspnet_server" type="generate_grasps_server_local.py" required="true" output="screen"/>
+    <node pkg="contact_graspnet" name="graspnet_detection" type="graspnet_detection.py" required="true" output="screen"/>
+</launch>

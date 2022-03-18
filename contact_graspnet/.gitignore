@@ -1,6 +1,7 @@
-results
+pointnet2/*
+results/*
 checkpoints/*
-*.npz
-**/*.pyc
-**/__pycache__
-.vscode
+testing_data/*
+src/contact_graspnet/results/*
+src/contact_graspnet/test_data/*
+src/contact_graspnet/__pycache__*
