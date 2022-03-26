@@ -15,8 +15,8 @@ class GenerateGrasps(smach.State):
     def __init__(self):
         smach.State.__init__(self,
                              outcomes=['succeeded', 'looping', 'failed'],
-                             input_keys=['objs_resp', 'prev'],
-                             output_keys=['prev', 'grasps_resp', 'objs_resp'])
+                             input_keys=['prev', 'objs_resp'],
+                             output_keys=['prev', 'grasps_resp'])
         self.retry_attempts = 3
         self.try_num = 0
 
@@ -27,6 +27,14 @@ class GenerateGrasps(smach.State):
         objs_resp = userdata.objs_resp 
 
         grasps_resp = generate_grasps(objs_resp.full_pcl, objs_resp.object_clouds)
+        
+        # pcl_msg = rospy.wait_for_message('/throttle_filtering_points/filtered_points', PointCloud2)
+
+        # pcl = ros_numpy.numpify(pcl_msg)
+        # pcl = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
+        
+        # grasps_resp = generate_grasps(pcl_msg, {})
+        
         self.try_num += 1
 
         pose_count = np.sum([len(grasp_poses.poses) for grasp_poses in grasps_resp.all_grasp_poses])

@@ -17,7 +17,7 @@ class Pickup(smach.State):
     def __init__(self, arm_torso_controller):
         smach.State.__init__(self,
                              outcomes=['succeeded', 'failed'],
-                             input_keys=['objs_resp', 'grasps_resp'],
+                             input_keys=['grasps_resp'],
                              output_keys=['prev']
                              )
         self.arm_torso_controller = arm_torso_controller
@@ -28,7 +28,7 @@ class Pickup(smach.State):
 
     def execute(self, userdata):
         userdata.prev = 'Pickup'
-        objs_resp = userdata.objs_resp
+        objs_resp = []
         grasps_resp = userdata.grasps_resp
 
         result = self.pick_object(objs_resp, grasps_resp.all_grasp_poses[0], 0)
@@ -45,19 +45,17 @@ class Pickup(smach.State):
 
         co = add_collision_object(objs_resp.object_clouds[obj_idx], self.planning_scene)
 
-        # rospy.sleep(7.0)
-        # clear_octomap()
-        # rospy.sleep(4.)
+        clear_octomap()
+        rospy.sleep(1.)
 
         # pclmsg = rospy.wait_for_message('/throttle_filtering_points/filtered_points', PointCloud2, timeout=10)
         # self.test_cloud_pub.publish(pclmsg)
-        # rospy.sleep(10.0)0
 
-        # self.arm_torso_controller.sync_reach_safe_joint_space()
         config = dict(planning_time=15., allow_replanning=True)
         self.arm_torso_controller.configure_planner(config)
+        rospy.sleep(1.)
 
-        rospy.sleep(2.)
+        # prepare open gripper
         play_motion_action('open')
 
         print('About to Approach')
@@ -77,83 +75,83 @@ class Pickup(smach.State):
             # self.planning_scene.remove_world_object('object')
             # self.arm_torso_controller.update_planning_scene(add=True)
 
-            shift = 0.2
-            config['planning_attempts'] = 1
-            config['planning_time'] = 5.
-            config['num_planning_attempts'] = 5
-            self.arm_torso_controller.configure_planner(config)
-            for i in range(3):
-                print('Shift Try: {}'.format(i + 1))
-                result = self.arm_torso_controller.sync_shift_ee(x=shift)
-                if result:
-                    break
-                else:
-                    shift -= 0.03
+            # shift = 0.2
+            # config['planning_attempts'] = 1
+            # config['planning_time'] = 5.
+            # config['num_planning_attempts'] = 5
+            # self.arm_torso_controller.configure_planner(config)
+            # for i in range(3):
+            #     print('Shift Try: {}'.format(i + 1))
+            #     result = self.arm_torso_controller.sync_shift_ee(x=shift)
+            #     if result:
+            #         break
+            #     else:
+            #         shift -= 0.03
 
-            del config['planning_attempts']
-            self.arm_torso_controller.configure_planner(config)
+            # del config['planning_attempts']
+            # self.arm_torso_controller.configure_planner(config)
 
-            rospy.sleep(5.)
+            # rospy.sleep(5.)
 
-            if not result:
-                print('Shift Forward Failed')
-                result='failed'
-                # co = self.add_collision_object(objs_resp.object_clouds[obj_ind])
-                # home_result = play_motion_action('home')
-                # clear_octomap()
-                # rospy.sleep(3.)
-                self.arm_torso_controller.sync_reach_safe_joint_space()
-                self.planning_scene.remove_world_object('object')
-            else:
-                print('About to Close')
-                result = play_motion_action('close')
+            # if not result:
+            #     print('Shift Forward Failed')
+            #     result='failed'
+            #     # co = self.add_collision_object(objs_resp.object_clouds[obj_ind])
+            #     # home_result = play_motion_action('home')
+            #     # clear_octomap()
+            #     # rospy.sleep(3.)
+            #     self.arm_torso_controller.sync_reach_safe_joint_space()
+            #     self.planning_scene.remove_world_object('object')
+            # else:
+            #     print('About to Close')
+            #     result = play_motion_action('close')
 
-                rospy.sleep(5.)
+            #     rospy.sleep(5.)
 
-                if not result:
-                    print('Close Failed')
-                    result='failed'
-                    # co = self.add_collision_object(objs_resp.object_clouds[obj_ind])
-                    # home_result = play_motion_action('home')
-                    # self.arm_torso_controller.sync_reach_safe_joint_space()
-                    # self.planning_scene.remove_world_object('object')
-                else:
-                    print('Attaching Object')
-                    aco = AttachedCollisionObject()
-                    aco.link_name = self.arm_torso_controller.move_group.get_end_effector_link()
-                    aco.object = co
-                    aco.touch_links = ['gripper_link', 'gripper_left_finger_link', 'gripper_right_finger_link']
-                    self.planning_scene.attach_object(aco)
+            #     if not result:
+            #         print('Close Failed')
+            #         result='failed'
+            #         # co = self.add_collision_object(objs_resp.object_clouds[obj_ind])
+            #         # home_result = play_motion_action('home')
+            #         # self.arm_torso_controller.sync_reach_safe_joint_space()
+            #         # self.planning_scene.remove_world_object('object')
+            #     else:
+            #         print('Attaching Object')
+            #         aco = AttachedCollisionObject()
+            #         aco.link_name = self.arm_torso_controller.move_group.get_end_effector_link()
+            #         aco.object = co
+            #         aco.touch_links = ['gripper_link', 'gripper_left_finger_link', 'gripper_right_finger_link']
+            #         self.planning_scene.attach_object(aco)
 
-                    rospy.sleep(5.)
+            #         rospy.sleep(5.)
 
-                    print('About to Lift')
-                    result = self.arm_torso_controller.sync_shift_ee_frame(shift_frame='map', z=0.2)
+            #         print('About to Lift')
+            #         result = self.arm_torso_controller.sync_shift_ee_frame(shift_frame='map', z=0.2)
 
-                    rospy.sleep(5.)
+            #         rospy.sleep(5.)
 
-                    if not result:
-                        print('Lift Failed')
-                        result='failed'
-                        # home_result = play_motion_action('home')
-                        self.arm_torso_controller.sync_reach_safe_joint_space()
-                    else:
-                        self.planning_scene.remove_attached_object(eef_link, name='object')
-                        self.planning_scene.remove_world_object('object')
+            #         if not result:
+            #             print('Lift Failed')
+            #             result='failed'
+            #             # home_result = play_motion_action('home')
+            #             self.arm_torso_controller.sync_reach_safe_joint_space()
+            #         else:
+            #             self.planning_scene.remove_attached_object(eef_link, name='object')
+            #             self.planning_scene.remove_world_object('object')
 
-                        print('About to Open')
-                        result = play_motion_action('open')
+            #             print('About to Open')
+            #             result = play_motion_action('open')
 
-                        rospy.sleep(5.)
+            #             rospy.sleep(5.)
 
-                        if not result:
-                            print('Open Failed')
-                            # home_result = play_motion_action('home')
-                            self.arm_torso_controller.sync_reach_safe_joint_space()
-                        else:
-                            print('Open Succeeded')
-                            # home_result = play_motion_action('home')
-                            self.arm_torso_controller.sync_reach_safe_joint_space()
+            #             if not result:
+            #                 print('Open Failed')
+            #                 # home_result = play_motion_action('home')
+            #                 self.arm_torso_controller.sync_reach_safe_joint_space()
+            #             else:
+            #                 print('Open Succeeded')
+            #                 # home_result = play_motion_action('home')
+            #                 self.arm_torso_controller.sync_reach_safe_joint_space()
 
 
         self.planning_scene.remove_attached_object(eef_link, name='object')

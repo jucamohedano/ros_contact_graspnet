@@ -92,7 +92,7 @@ class ArmTorsoController:
         eef_link = config.get('eef_link', 'gripper_grasping_frame')
         allow_replanning = config.get('allow_replanning', True)
         goal_pos_tol = config.get('goal_pos_tol', 0.001)
-        goal_orien_tol = config.get('goal_orien_tol', 0.0001)
+        # goal_orien_tol = config.get('goal_orien_tol', 0.0001)
         goal_joint_tol = config.get('goal_joint_tolerance', 0.001)
         max_velocity = config.get('max_velocity', 0.3)
         max_acceleration = config.get('max_acceleration', 0.4)
@@ -109,8 +109,8 @@ class ArmTorsoController:
         self._move_group.set_max_acceleration_scaling_factor(max_acceleration)
         if goal_pos_tol:
             self._move_group.set_goal_position_tolerance(goal_pos_tol)
-        if goal_orien_tol:
-            self._move_group.set_goal_orientation_tolerance(goal_orien_tol)
+        # if goal_orien_tol:
+        #     self._move_group.set_goal_orientation_tolerance(goal_orien_tol)
         if goal_joint_tol:
             self._move_group.set_goal_joint_tolerance(goal_joint_tol)
         if pose_frame:
@@ -128,7 +128,7 @@ class ArmTorsoController:
 
         try:
             curr_pose = self._move_group.get_current_pose()
-            curr_pose.pose = self.to_frame_pose(curr_pose.pose, source_frame=curr_pose.header.frame_id, target_frame=shift_frame)
+            curr_pose.pose = to_frame_pose(curr_pose.pose, source_frame=curr_pose.header.frame_id, target_frame=shift_frame)
             curr_pose.header.frame_id = shift_frame
 
             curr_pose.pose.position.x += x
@@ -232,7 +232,6 @@ class ArmTorsoController:
             return result
         except Exception as e:
             print('Failed: sync_reach_ee_poses: {}'.format(e))
-            print(len(posearray.poses))
             return False
 
     def sync_reach_safe_joint_space(self):

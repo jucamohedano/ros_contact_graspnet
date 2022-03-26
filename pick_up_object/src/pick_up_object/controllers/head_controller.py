@@ -10,7 +10,7 @@ class HeadController:
                                                     FollowJointTrajectoryAction)
         self._client.wait_for_server()
 
-    def sync_reach_to(self, joint1, joint2, time_from_start=1, wait=3):
+    def sync_reach_to(self, joint1, joint2, time_from_start=1, wait=10):
         goal = FollowJointTrajectoryGoal()
         goal.trajectory.joint_names = ["head_1_joint", "head_2_joint"]
         point = JointTrajectoryPoint()

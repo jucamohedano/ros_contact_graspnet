@@ -5,6 +5,7 @@ import numpy as np
 import tf2_ros
 import tf2_geometry_msgs
 import actionlib
+import tf2_ros
 
 from pick_up_object.srv import GenerateGrasps, TfTransform, TfTransformRequest, DetectObjects
 from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
@@ -97,7 +98,7 @@ def tf_transform(target_frame, pose_array=None, pointcloud=None):
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
-def to_frame_pose(self, pose, source_frame='xtion_depth_optical_frame', target_frame='base_footprint'):
+def to_frame_pose(pose, source_frame='xtion_depth_optical_frame', target_frame='base_footprint'):
     """
     Arguments:
         pose {Pose} -- pose to convert
@@ -106,12 +107,12 @@ def to_frame_pose(self, pose, source_frame='xtion_depth_optical_frame', target_f
     Return:
         pose {Pose} -- target pose
     """
-    
+    tfBuffer = tf2_ros.Buffer()
     # remove '/' from source_frame and target frame to avoid tf2.InvalidArgumentException
     source_frame = source_frame.replace('/', '')
     target_frame = target_frame.replace('/', '')
     try:
-        transformation = self.tfBuffer.lookup_transform(target_frame, source_frame,
+        transformation = tfBuffer.lookup_transform(target_frame, source_frame,
         rospy.Time(0), rospy.Duration(0.1))
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
         print(e)
@@ -174,7 +175,6 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
     co.primitive_poses = pose_array.poses
 
     planning_scene.add_object(co)
-    rospy.sleep(2.0)
     return co
 
 def play_motion_action(action='home'):
