@@ -4,7 +4,6 @@ import rospy
 
 from pick_up_object.utils import clear_octomap
 
-
 class ShiftForward(smach.State):
     
     def __init__(self, arm_torso_controller, gripper, planning_scene):
@@ -37,11 +36,17 @@ class ShiftForward(smach.State):
         config['num_planning_attempts'] = 5
         self.arm_torso.configure_planner(config)
 
+        # check that gripper is open
+        gripper_state = self.gripper.gripper_state()
+        if gripper_state.position[0] < 0.3:
+            self.gripper.sync_reach_to(self.gripper.JOINT_MAX)
+
+        # move forward gripper in gripper_grasping_frame
         shift = 0.25
         clear_octomap()
         rospy.sleep(1.)
         result = self.arm_torso.sync_shift_ee(x=shift)
-        result = 1
+        print(result)
         # for i in range(3):
             # print('Shift Try: {}'.format(i + 1))
             # result = self.arm_torso.sync_shift_ee(x=shift)
