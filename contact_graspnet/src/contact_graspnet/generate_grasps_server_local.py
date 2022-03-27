@@ -115,6 +115,7 @@ def generate_grasps(req):
     pred_grasps_cam, scores, contacts, openings = grasp_estimator.predict_scene_grasps(sess, pc_full=pcl_np, 
                                                                                         pc_segments=objs_np, local_regions=True, 
                                                                                         filter_grasps=True, forward_passes=1)
+
     # loop through each object's pcl and adjust predicted grasps                                                                                  
     for i in range(len(req.objects_pcl)):
         pc_seg_map = tf_transform('map', pointcloud=req.objects_pcl[i]).target_pointcloud
