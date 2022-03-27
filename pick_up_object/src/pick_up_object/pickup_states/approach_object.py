@@ -30,15 +30,14 @@ class ApproachObject(smach.State):
         # grasps_poses.all_grasp_poses[0].header.frame_id='gripper_grasping_frame'
         # print(grasps_poses.all_grasp_poses[0])
         
+        self.arm_torso.update_planning_scene(add=False)
         self.target_poses_pub.publish(grasps_poses.all_grasp_poses[0])
-        self.arm_torso.configure_planner()
+        # self.arm_torso.configure_planner()
         result = self.arm_torso.sync_reach_ee_poses(grasps_poses.all_grasp_poses[0])
         
         # add add object to collision matrix of planning scene
-        # self.arm_torso.update_planning_scene(add=True)
 
         if not result:
-            print('Approach Failed')
             self.arm_torso.sync_reach_safe_joint_space()
             result='failed'
         else:
