@@ -138,7 +138,7 @@ class ArmTorsoController:
             self._move_group.set_pose_target(curr_pose)
 
             # publish pose for debugging purposes
-            print('Publishing debug_plan_pose')
+            # print('Publishing debug_plan_pose')
             self.debug_pose.publish(curr_pose)
 
             self._move_group.set_start_state_to_current_state()
@@ -174,7 +174,7 @@ class ArmTorsoController:
 
             self._move_group.set_pose_target(curr_pose)
             # publish pose for debugging purposes
-            print('Publishing debug_plan_pose')
+            # print('Publishing debug_plan_pose')
             self.debug_pose.publish(curr_pose)
 
             self._move_group.set_start_state_to_current_state()
@@ -239,7 +239,7 @@ class ArmTorsoController:
             Predefined pose with arm and torso stretched
         """
 
-        return self.sync_reach_joint_space(0.35, (0.07, 0.92, 0.16, 0.85, -1.62, 0.03, 0.46))
+        return self.sync_reach_joint_space(0.35, (0.07, 0.92, 0.16, 0.85, -1.62, 0.03, 1.74))
 
     def sync_reach_joint_space(self, torso_goal=None, arm_goals=None):
         """
