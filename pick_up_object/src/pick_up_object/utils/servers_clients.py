@@ -10,7 +10,7 @@ import tf2_ros
 from pick_up_object.srv import GenerateGrasps, TfTransform, TfTransformRequest, DetectObjects
 from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
 from geometry_msgs.msg import Pose, PoseArray
-from moveit_msgs.msg import CollisionObject
+from moveit_msgs.msg import CollisionObject, AttachedCollisionObject
 from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseStamped
@@ -131,6 +131,7 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
     Returns:
         co {CollisionObject} -- collision object
     """
+    pcl = tf_transform(target_frame='gripper_grasping_frame', pointcloud=object_cloud).target_pointcloud
 
     pcl = np.fromstring(object_cloud.data, np.float32)
     pcl = pcl.reshape(object_cloud.height, object_cloud.width, -1)
@@ -170,7 +171,6 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
         co.primitives.append(primitive)
         pose_array.poses.append(primitive_pose)
 
-    # pose_array = tf_transform(pose_array)
     co.header = object_cloud.header
     co.primitive_poses = pose_array.poses
 
