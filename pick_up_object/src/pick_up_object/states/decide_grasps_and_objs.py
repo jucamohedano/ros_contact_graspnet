@@ -4,7 +4,7 @@ import rospy
 import smach
 # import dynamic_reconfigure.client
 
-from pick_up_object.utils import add_collision_object, clear_octomap, tf_transform
+from pick_up_object.utils import add_collision_object, clear_octomap, play_motion_action
 
 # TODO: create a substate machine with the code from pick_object function
 
@@ -20,9 +20,11 @@ class DecideGraspsAndObjs(smach.State):
         self.arm_torso = arm_torso_controller
 
     def execute(self, userdata):
+        play_motion_action('home')
         userdata.prev = 'DecideGraspsAndObjs'
         objs_resp = userdata.objs_resp
         
+        self.arm_torso.configure_planner()
         eef_link = self.arm_torso.move_group.get_end_effector_link()
 
         # remove any previous objects added to the planning scene
@@ -31,12 +33,10 @@ class DecideGraspsAndObjs(smach.State):
         if self.planning_scene.get_objects(object_ids=['object']):
             self.planning_scene.remove_world_object('object')
 
-        # result = self.pick_object(objs_resp, grasps_resp.all_grasp_poses[0], 0)
-
-        # cloud = tf_transform(target_frame='base_footprint', pointcloud=objs_resp.object_clouds[0]).target_pose_array
-
         # hard coding the index of the object to pick up
-        co = add_collision_object(objs_resp.object_clouds[0], self.planning_scene)
+        rospy.loginfo("Adding collision object with id='object' to the planning scene")
+        co = add_collision_object(objs_resp.object_clouds[0], self.planning_scene, num_primitives=50)
+        clear_octomap()
         rospy.sleep(1.)
         userdata.collision_obj = co
 
