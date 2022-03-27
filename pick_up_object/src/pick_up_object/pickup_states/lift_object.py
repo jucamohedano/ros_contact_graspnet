@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import smach
+import rospy
 from pick_up_object.utils import play_motion_action
 from moveit_msgs.msg import AttachedCollisionObject
 
