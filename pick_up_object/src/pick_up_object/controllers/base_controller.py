@@ -10,7 +10,6 @@ from geometry_msgs.msg import Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from tf2_py import TransformException
-from typing import Tuple, Optional, Union, Sequence
 
 
 class BaseController:
