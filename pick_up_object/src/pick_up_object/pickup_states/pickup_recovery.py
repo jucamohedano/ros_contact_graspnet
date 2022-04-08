@@ -26,7 +26,7 @@ class PickupRecovery(smach.State):
         
         self.gripper.sync_reach_to(joint1=0.04, joint2=0.04)
         rospy.sleep(2.)
-        self.arm_torso.sync_shift_ee_frame(shift_frame='map', z=0.2)
+        self.arm_torso.sync_shift_ee_frame(shift_frame='base_footprint', z=0.2)
         rospy.sleep(2.)
         self.arm_torso.sync_reach_safe_joint_space()
         play_motion_action('open')

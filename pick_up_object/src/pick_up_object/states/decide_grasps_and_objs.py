@@ -13,16 +13,17 @@ class DecideGraspsAndObjs(smach.State):
     def __init__(self, arm_torso_controller):
         smach.State.__init__(self,
                              outcomes=['succeeded', 'failed'],
-                             input_keys=['objs_resp', 'grasps_resp'],
-                             output_keys=['prev', 'collision_obj']
+                             input_keys=['objs_resp', 'grasps_resp', 'euclidean_clusters'],
+                             output_keys=['prev', 'collision_obj',]
                              )
         self.planning_scene = arm_torso_controller._scene
         self.arm_torso = arm_torso_controller
 
     def execute(self, userdata):
-        play_motion_action('home')
+        # play_motion_action('home')
         userdata.prev = 'DecideGraspsAndObjs'
-        objs_resp = userdata.objs_resp
+        # objs_resp = userdata.objs_resp
+        # euclidean_clusters = userdata.euclidean_clusters
         
         self.arm_torso.configure_planner()
         eef_link = self.arm_torso.move_group.get_end_effector_link()
@@ -35,9 +36,11 @@ class DecideGraspsAndObjs(smach.State):
 
         # hard coding the index of the object to pick up
         rospy.loginfo("Adding collision object with id='object' to the planning scene")
-        co = add_collision_object(objs_resp.object_clouds[0], self.planning_scene, num_primitives=50)
+
+        # co = add_collision_object(objs_resp.object_clouds[0], self.planning_scene, num_primitives=50)
+        
         clear_octomap()
         rospy.sleep(1.)
-        userdata.collision_obj = co
+        # userdata.collision_obj = co
 
         return 'succeeded'

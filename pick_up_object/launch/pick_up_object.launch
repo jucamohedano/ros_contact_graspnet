@@ -1,7 +1,8 @@
 <launch>
     <node pkg="pick_up_object" name="tf_transform" type="tf_transform.py" required="true" output="screen"/>
+    <!-- <node pkg="pcl_manipulation" name="pcl_manipulation_server" type="pcl_manipulation_server" /> -->
 
-    <arg name="node_start_delay" default="1.0" />
+    <arg name="node_start_delay" default="1.0" /> -->
     <node pkg="pick_up_object" name="pickup_sm" type="pickup_sm.py" required="true" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
 </launch>
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import smach
+import smach_ros
 from pick_up_object.pickup_states import *
 
 class PickupObject_SM():
@@ -11,6 +12,8 @@ class PickupObject_SM():
 
         self.sm = smach.StateMachine(input_keys=['prev', 'objs_resp', 'grasps_resp', 'collision_obj'], 
                                     outcomes=['success','failed'])
+        sis = smach_ros.IntrospectionServer('pickup_sm', self.sm, '/SM_PICKUP_TOP/SM_PICKUP_SUB')
+        sis.start()
 
     def add_states(self):
         
@@ -34,7 +37,7 @@ class PickupObject_SM():
                                         })
             smach.StateMachine.add('GraspObject', GraspObject(self.arm_torso, self.gripper, self.planning_scene),
                                     transitions={
-                                        'succeeded': 'failed',
+                                        'succeeded': 'LiftObject',
                                         'failed': 'PickupRecovery'},
                                     remapping={
                                         'prev': 'prev',

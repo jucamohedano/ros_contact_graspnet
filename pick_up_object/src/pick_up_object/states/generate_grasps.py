@@ -24,16 +24,9 @@ class GenerateGrasps(smach.State):
     def execute(self, userdata):
         
         userdata.prev = 'GenerateGrasps'
-        objs_resp = userdata.objs_resp 
 
-        grasps_resp = generate_grasps(objs_resp.full_pcl, objs_resp.object_clouds)
-        
-        # pcl_msg = rospy.wait_for_message('/throttle_filtering_points/filtered_points', PointCloud2)
-
-        # pcl = ros_numpy.numpify(pcl_msg)
-        # pcl = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
-        
-        # grasps_resp = generate_grasps(pcl_msg, {})
+        # grasps_resp = self.predict_full_scene()
+        grasps_resp = self.generate_grasps()
         
         self.try_num += 1
 
@@ -46,3 +39,13 @@ class GenerateGrasps(smach.State):
         else:
             return 'failed'
 
+
+    def predict_full_scene(self):
+        
+        pcl_msg = rospy.wait_for_message('/throttle_filtering_points/filtered_points', PointCloud2)
+
+        pcl = ros_numpy.numpify(pcl_msg)
+        pcl = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
+        
+        grasps_resp = generate_grasps(pcl_msg, {})
+        return grasps_resp

@@ -14,6 +14,7 @@ from moveit_msgs.msg import CollisionObject, AttachedCollisionObject
 from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseStamped
+# from pcl_manipulation.srv import Euclidian
 
 
 def detect_objs():
@@ -30,6 +31,24 @@ def detect_objs():
         detect = rospy.ServiceProxy('detect_objects', DetectObjects)
         resp = detect()
         print('detection done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def detect_clusters(pcl):
+    """
+        Calls clustering service
+
+        Return:
+            clusters {Euclidean}
+    """
+
+    print('waiting for detect_objects')
+    rospy.wait_for_service('/pcl_manipulation/cluster', timeout=10)
+    try:
+        detect = rospy.ServiceProxy('/pcl_manipulation/cluster', Euclidian)
+        resp = detect(pcl)
+        print('Clustering done!')
         return resp
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)

@@ -94,7 +94,7 @@ class ArmTorsoController:
         goal_pos_tol = config.get('goal_pos_tol', 0.001)
         # goal_orien_tol = config.get('goal_orien_tol', 0.0001)
         goal_joint_tol = config.get('goal_joint_tolerance', 0.001)
-        max_velocity = config.get('max_velocity', 0.3)
+        max_velocity = config.get('max_velocity', 0.9)
         max_acceleration = config.get('max_acceleration', 0.4)
         pose_frame = config.get('pose_frame', None)
 

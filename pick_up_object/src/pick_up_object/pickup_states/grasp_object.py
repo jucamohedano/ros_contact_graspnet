@@ -19,11 +19,11 @@ class GraspObject(smach.State):
     def execute(self, userdata):
         
         userdata.prev = 'GraspObject'
-        collision_obj = userdata.collision_obj
+        # collision_obj = userdata.collision_obj
         
         rospy.loginfo('Going to close gripper')
 
-        self.arm_torso.update_planning_scene(add=True)
+        # self.arm_torso.update_planning_scene(add=True)
         rospy.sleep(2.)
         result = self.gripper.sync_reach_to(joint1=0.01, joint2=0.01, wait=120)
 
@@ -43,14 +43,12 @@ class GraspObject(smach.State):
             # self.planning_scene.remove_world_object('object')
         else:
             rospy.loginfo("Attaching object to gripper")
-            aco = AttachedCollisionObject()
+            # aco = AttachedCollisionObject()
             # aco.link_name = 'gripper_left_finger_link'
-            aco.link_name = self.arm_torso.move_group.get_end_effector_link()
-            aco.object = collision_obj
-            aco.touch_links = ['gripper_link', 'gripper_tool_link', 'gripper_left_finger_link', 'gripper_right_finger_link']
-            self.planning_scene.attach_object(aco)
-
-            rospy.sleep(2.)
+            # aco.link_name = self.arm_torso.move_group.get_end_effector_link()
+            # aco.object = collision_obj
+            # aco.touch_links = ['gripper_link', 'gripper_tool_link', 'gripper_left_finger_link', 'gripper_right_finger_link']
+            # self.planning_scene.attach_object(aco)
 
             result = 'succeeded'
 

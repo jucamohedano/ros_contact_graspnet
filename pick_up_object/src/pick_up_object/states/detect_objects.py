@@ -2,7 +2,7 @@
 import rospy
 import smach
 import numpy as np
-from pick_up_object.utils import detect_objs, play_motion_action
+from pick_up_object.utils import detect_objs, play_motion_action, detect_clusters
 
 home_pose_joint_val = np.array([0.2, -1.3387, -0.2, 1.9385, -1.57, 1.3698])
 
@@ -21,27 +21,22 @@ class DetectObjects(smach.State):
 
     def execute(self, userdata):
         
-        # avoid resetting home position if you are already in it
-        # curr_joint_val might be empty if there are synchronization clock problems
-        # rospy.sleep(2.)
-        
-        play_home_motion = False
-        try:
-            curr_joints_val = self.arm_torso_controller._move_group.get_current_joint_values()
-            if curr_joints_val[-1] > 0.32:
-                self.arm_torso_controller.sync_reach_safe_joint_space()
-                play_home_motion = False
-        except rospy.ROSException:
-            play_home_motion = True
-        # curr_joints_val = curr_joints_val[1:-1] # dont want torso
-        # curr_joints_val = np.array([round(j, 4) for j in curr_joints_val])
-        # print('curr_joints_val', curr_joints_val)
-        # print('home_pose_joint_val', home_pose_joint_val)
+        # play_home_motion = False
+        # try:
+        #     curr_joints_val = self.arm_torso_controller._move_group.get_current_joint_values()
+        #     if curr_joints_val[-1] > 0.32:
+        #         self.arm_torso_controller.sync_reach_safe_joint_space()
+        #         play_home_motion = False
+        # except rospy.ROSException:
+        #     play_home_motion = True
 
-        # if not np.allclose(curr_joints_val, home_pose_joint_val, rtol=1e-03, atol=1e-05):
-        #     print('not close enough')
-        if play_home_motion:
-            play_motion_action('home')
+
+
+        # if play_home_motion:
+        #     play_motion_action('home')
+        
+        self.arm_torso_controller.sync_reach_safe_joint_space()
+            
         # lift torso to get a good top view
         self.torso_controller.sync_reach_to(joint1=0.35) 
         
@@ -49,7 +44,6 @@ class DetectObjects(smach.State):
 
         # look down
         self.head_controller.sync_reach_to(joint1=0, joint2=-0.98)
-        # TODO: handle error
 
         objs_resp = detect_objs()
         self.try_num += 1

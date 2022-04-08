@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Custom Mask R-CNN model based on https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
 """

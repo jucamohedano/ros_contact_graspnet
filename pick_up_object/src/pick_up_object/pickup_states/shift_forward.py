@@ -26,15 +26,15 @@ class ShiftForward(smach.State):
         print('About to Shift Forward')
 
         # self.planning_scene.remove_world_object('object')
-        self.arm_torso.update_planning_scene(add=True)
+        # self.arm_torso.update_planning_scene(add=True)
 
 
         # moveit planner params
-        config = dict()
-        config['planning_attempts'] = 1
-        config['planning_time'] = 5.
-        config['num_planning_attempts'] = 5
-        self.arm_torso.configure_planner(config)
+        # config = dict()
+        # config['planning_attempts'] = 1
+        # config['planning_time'] = 5.
+        # config['num_planning_attempts'] = 5
+        # self.arm_torso.configure_planner(config)
 
         # check that gripper is open
         gripper_state = self.gripper.gripper_state()
@@ -42,7 +42,7 @@ class ShiftForward(smach.State):
             self.gripper.sync_reach_to(self.gripper.JOINT_MAX)
 
         # move forward gripper in gripper_grasping_frame
-        shift = 0.25
+        shift = 0.2
         clear_octomap()
         rospy.sleep(1.)
         result = self.arm_torso.sync_shift_ee(x=shift)
@@ -56,8 +56,8 @@ class ShiftForward(smach.State):
             #     shift -= 0.03
 
         # reset planning configuration
-        del config['planning_attempts']
-        self.arm_torso.configure_planner(config)
+        # del config['planning_attempts']
+        # self.arm_torso.configure_planner(config)
 
         rospy.sleep(1.)
 

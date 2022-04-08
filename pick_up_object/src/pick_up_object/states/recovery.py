@@ -22,6 +22,10 @@ class Recovery(smach.State):
         if userdata.prev == 'GenerateGrasps':
             self.restart_count += 1
             return 'restart'
+        
+        if userdata.prev == 'GenerateGeometricGrasps':
+            self.restart_count += 1
+            return 'restart'
 
         if userdata.prev == 'Pickup':
             self.restart_count += 1
