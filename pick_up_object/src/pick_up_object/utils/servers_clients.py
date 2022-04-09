@@ -6,6 +6,7 @@ import tf2_ros
 import tf2_geometry_msgs
 import actionlib
 import tf2_ros
+import ros_numpy
 
 from pick_up_object.srv import GenerateGrasps, TfTransform, TfTransformRequest, DetectObjects
 from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
@@ -14,7 +15,7 @@ from moveit_msgs.msg import CollisionObject, AttachedCollisionObject
 from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseStamped
-# from pcl_manipulation.srv import Euclidian
+from pcl_manipulation.srv import Euclidian
 
 
 def detect_objs():
@@ -56,8 +57,8 @@ def detect_clusters(pcl):
 def generate_grasps(full_pcl, objs_pcl):
     """
     Arguments:
-        full_pcl {PointCloud} -- full point cloud of the scene
-        objs_pcl {dict of PointClouds} -- dictionary with each segmented object pointcloud
+        full_pcl {PointCloud2} -- full point cloud of the scene
+        objs_pcl {PointCloud2[]} -- list with each segmented object pointcloud
     
     Return:
         grasps {GenerateGrasps} -- array of grasps
@@ -139,7 +140,7 @@ def to_frame_pose(pose, source_frame='xtion_depth_optical_frame', target_frame='
     pose = tf2_geometry_msgs.do_transform_pose(PoseStamped(pose=pose), transformation).pose
     return pose
 
-def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
+def add_collision_object(object_cloud, planning_scene, num_primitives = 200, id='object'):
     """
     adds collision object to the planning scene created by moveit
 
@@ -152,21 +153,24 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
     """
     pcl = tf_transform(target_frame='gripper_grasping_frame', pointcloud=object_cloud).target_pointcloud
 
-    pcl = np.fromstring(object_cloud.data, np.float32)
-    pcl = pcl.reshape(object_cloud.height, object_cloud.width, -1)
-    
-    cloud_obj = np.zeros(pcl.shape[0], dtype=[
-        ('x', np.float32),
-        ('y', np.float32),
-        ('z', np.float32)
-    ])
-    cloud_obj['x'] = pcl[:,:,0].flatten()
-    cloud_obj['y'] = pcl[:,:,1].flatten()
-    cloud_obj['z'] = pcl[:,:,2].flatten()
+    # pcl = np.fromstring(object_cloud.data, np.float32)
+    # print('pcl shape fromsring = {}'.format(pcl.shape))
+    # pcl = pcl.reshape(object_cloud.height, object_cloud.width, -1)
+    # print('pcl shape after reshape = {}'.format(pcl.shape))
+    # cloud_obj = np.zeros(pcl.shape[0], dtype=[
+    #     ('x', np.float32),
+    #     ('y', np.float32),
+    #     ('z', np.float32)
+    # ])
+    # cloud_obj['x'] = pcl[:,:,0].flatten()
+    # cloud_obj['y'] = pcl[:,:,1].flatten()
+    # cloud_obj['z'] = pcl[:,:,2].flatten()
+    pcl = ros_numpy.numpify(object_cloud)
+    cloud_obj = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
 
     # add collision object to planning scene
     co = CollisionObject()
-    co.id = 'object'
+    co.id = id
 
     # create collision object
     primitive = SolidPrimitive()

@@ -25,9 +25,9 @@ if __name__ == '__main__':
     sis.start()
 
     with sm:
-        smach.StateMachine.add('DetectObjects', DetectObjects(head_controller, torso_controller, arm_torso_controller),
+        smach.StateMachine.add('DetectObjects', DetectObjects(head_controller, torso_controller, arm_torso_controller, detector='PCL'),
                                 transitions={
-                                    'succeeded': 'GenerateGeometricGrasps',
+                                    'succeeded': 'GenerateGrasps',
                                     'looping': 'DetectObjects',
                                     'failed': 'Recovery'},
                                 remapping={

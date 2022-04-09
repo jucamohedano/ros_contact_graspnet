@@ -21,13 +21,16 @@ from pick_up_object.utils import to_frame_pose, PlanningSceneInterface
 
 class ArmTorsoController:
     def __init__(self):
+        print('***************************************')
         self._listener = tf.TransformListener()
+        rospy.sleep(3)
         self._robot = moveit_commander.RobotCommander()
         # self._group = moveit_commander.MoveGroupCommander('')
         group_name = "arm_torso"
         if not self._robot.has_group(group_name):
             raise RuntimeError("the move_group [arm_torso] is not found")
         self._move_group = self._robot.get_group(group_name)
+        print(self._move_group)
 
         self._joints = self._move_group.get_joints()
         self._scene = PlanningSceneInterface()
@@ -272,7 +275,7 @@ class ArmTorsoController:
             self._move_group.stop()
         return result
 
-    def update_planning_scene(self, add=True):
+    def update_planning_scene(self, add=True, entry_names=['object']):
         """
         Arguments:
             add {bool} -- To add object to the collision matrix from the planning scene            
@@ -283,10 +286,11 @@ class ArmTorsoController:
         scene = self.get_planning_scene(request).scene
         acm = scene.allowed_collision_matrix
         print(acm.default_entry_names)
+        print('received entry names {}'.format(entry_names))
 
         if add and not 'object' in acm.default_entry_names:
-            acm.default_entry_names += ['object']
-            acm.default_entry_values += [True]
+            acm.default_entry_names += entry_names
+            acm.default_entry_values += [True for name in entry_names]
             # new_planning_scene = PlanningScene(is_diff=True, allowed_collision_matrix=acm)
             # self._pubPlanningScene.publish(planning_scene_diff)
             # self.apply_planning_scene(planning_scene_diff)

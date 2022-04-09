@@ -21,8 +21,8 @@ def load_move_group(name, wfs=0):
 if __name__ == '__main__':
     rospy.init_node('test_arm_move')
 
-    #arm_torso = ArmTorsoController()
+    arm_torso = ArmTorsoController()
     #arm_torso.configure_planner()
 
-    #arm_torso.sync_reach_safe_joint_space()
-    load_move_group('arm_torso', wfs=15)
+    arm_torso.sync_reach_safe_joint_space()
+    #load_move_group('arm_torso', wfs=15)

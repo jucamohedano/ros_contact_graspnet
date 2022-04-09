@@ -6,7 +6,7 @@ from trajectory_msgs.msg import JointTrajectoryPoint
 
 
 class GripperController:
-    JOINT_MAX = 0.04
+    JOINT_MAX = 0.045
 
     def __init__(self):
         self._client = actionlib.SimpleActionClient("gripper_controller/follow_joint_trajectory",

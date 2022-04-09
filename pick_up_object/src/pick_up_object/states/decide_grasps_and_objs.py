@@ -14,7 +14,7 @@ class DecideGraspsAndObjs(smach.State):
         smach.State.__init__(self,
                              outcomes=['succeeded', 'failed'],
                              input_keys=['objs_resp', 'grasps_resp', 'euclidean_clusters'],
-                             output_keys=['prev', 'collision_obj',]
+                             output_keys=['prev']
                              )
         self.planning_scene = arm_torso_controller._scene
         self.arm_torso = arm_torso_controller
@@ -22,25 +22,27 @@ class DecideGraspsAndObjs(smach.State):
     def execute(self, userdata):
         # play_motion_action('home')
         userdata.prev = 'DecideGraspsAndObjs'
-        # objs_resp = userdata.objs_resp
+        objs_resp = userdata.objs_resp
         # euclidean_clusters = userdata.euclidean_clusters
         
         self.arm_torso.configure_planner()
         eef_link = self.arm_torso.move_group.get_end_effector_link()
 
         # remove any previous objects added to the planning scene
-        if self.planning_scene.get_attached_objects(object_ids=['object']):
-            self.planning_scene.remove_attached_object(eef_link, name='object')
-        if self.planning_scene.get_objects(object_ids=['object']):
-            self.planning_scene.remove_world_object('object')
+        if self.planning_scene.get_attached_objects():
+            self.planning_scene.remove_attached_object()
+        if self.planning_scene.get_objects():
+            # self.planning_scene.remove_world_object('object')
+            self.planning_scene.clear()
 
         # hard coding the index of the object to pick up
         rospy.loginfo("Adding collision object with id='object' to the planning scene")
 
-        # co = add_collision_object(objs_resp.object_clouds[0], self.planning_scene, num_primitives=50)
+        print('len(objs_resp.clusters)', len(objs_resp.clusters))
+        co = [add_collision_object(cluster, self.planning_scene, num_primitives=50, id='object_{}'.format(i)) for i, cluster in enumerate(objs_resp.clusters)]
         
         clear_octomap()
-        rospy.sleep(1.)
+        rospy.sleep(3.)
         # userdata.collision_obj = co
 
         return 'succeeded'
