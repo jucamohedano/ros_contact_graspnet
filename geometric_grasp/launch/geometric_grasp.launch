@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="geometric_grasp" name="find_poses_around_obj" type="poses_around_obj_server.py" required="true" output="screen"/>
+    <node pkg="geometric_grasp" name="reconstruct_pointcloud" type="merge_pointclouds_server.py" required="true" output="screen"/>
+    <node pkg="geometric_grasp" name="pcd_local_frames" type="pcd_local_frames_server.py" required="true" output="screen"/>
+    <node pkg="geometric_grasp" name="generate_grasp_candidate_antipodal" type="generate_grasp_candidate_antipodal.py" required="true" output="screen"/>
+    <node pkg="contact_graspnet" name="graspnet_detection" type="graspnet_detection.py" required="true" output="screen"/>
+</launch>

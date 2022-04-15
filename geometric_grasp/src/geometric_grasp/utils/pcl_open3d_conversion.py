@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/usr/bin/env python
+=======
+#!/usr/bin/env python3
+>>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
 # -*- coding: utf-8 -*-
 
 '''
@@ -26,6 +30,11 @@ import rospy
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
+<<<<<<< HEAD
+=======
+import copy
+import ros_numpy
+>>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
 
 # The data structure of each point in ros PointCloud2: 16 bits = x + y + z + rgb
 FIELDS_XYZ = [
@@ -76,7 +85,11 @@ def convertCloudFromRosToOpen3d(ros_cloud):
     cloud_data = list(pc2.read_points(ros_cloud, skip_nans=True, field_names = field_names))
 
     # Check empty
+<<<<<<< HEAD
     open3d_cloud = open3d.PointCloud()
+=======
+    open3d_cloud = open3d.geometry.PointCloud()
+>>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
     if len(cloud_data)==0:
         print("Converting an empty cloud")
         return None
@@ -96,8 +109,13 @@ def convertCloudFromRosToOpen3d(ros_cloud):
             rgb = [convert_rgbUint32_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
 
         # combine
+<<<<<<< HEAD
         open3d_cloud.points = open3d.Vector3dVector(np.array(xyz))
         open3d_cloud.colors = open3d.Vector3dVector(np.array(rgb)/255.0)
+=======
+        open3d_cloud.points = open3d.utility.Vector3dVector(np.array(xyz))
+        open3d_cloud.colors = open3d.utility.Vector3dVector(np.array(rgb)/255.0)
+>>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
     else:
         xyz = [(x,y,z) for x,y,z in cloud_data ] # get xyz
         open3d_cloud.points = open3d.Vector3dVector(np.array(xyz))
@@ -105,6 +123,88 @@ def convertCloudFromRosToOpen3d(ros_cloud):
     # return
     return open3d_cloud
 
+<<<<<<< HEAD
+=======
+
+def o3dpc_to_rospc(o3dpc, frame_id=None, stamp=None):
+    """ convert open3d point cloud to ros point cloud
+    Args:
+        o3dpc (open3d.geometry.PointCloud): open3d point cloud
+        frame_id (string): frame id of ros point cloud header
+        stamp (rospy.Time): time stamp of ros point cloud header
+    Returns:
+        rospc (sensor.msg.PointCloud2): ros point cloud message
+    """
+
+    cloud_npy = np.asarray(copy.deepcopy(o3dpc.points))
+    is_color = o3dpc.colors
+        
+
+    n_points = len(cloud_npy[:, 0])
+    if is_color:
+        data = np.zeros(n_points, dtype=[
+        ('x', np.float32),
+        ('y', np.float32),
+        ('z', np.float32),
+        ('rgb', np.uint32)
+        ])
+    else:
+        data = np.zeros(n_points, dtype=[
+            ('x', np.float32),
+            ('y', np.float32),
+            ('z', np.float32)
+            ])
+    data['x'] = cloud_npy[:, 0]
+    data['y'] = cloud_npy[:, 1]
+    data['z'] = cloud_npy[:, 2]
+    
+    if is_color:
+        rgb_npy = np.asarray(copy.deepcopy(o3dpc.colors))
+        rgb_npy = np.floor(rgb_npy*255) # nx3 matrix
+        rgb_npy = rgb_npy[:, 0] * BIT_MOVE_16 + rgb_npy[:, 1] * BIT_MOVE_8 + rgb_npy[:, 2]  
+        rgb_npy = rgb_npy.astype(np.uint32)
+        data['rgb'] = rgb_npy
+
+    rospc = ros_numpy.msgify(PointCloud2, data)
+    if frame_id is not None:
+        rospc.header.frame_id = frame_id
+
+    if stamp is None:
+        rospc.header.stamp = rospy.Time.now()
+    else:
+        rospc.header.stamp = stamp
+    rospc.height = 1
+    rospc.width = n_points
+    rospc.fields = []
+    rospc.fields.append(PointField(
+                            name="x",
+                            offset=0,
+                            datatype=PointField.FLOAT32, count=1))
+    rospc.fields.append(PointField(
+                            name="y",
+                            offset=4,
+                            datatype=PointField.FLOAT32, count=1))
+    rospc.fields.append(PointField(
+                            name="z",
+                            offset=8,
+                            datatype=PointField.FLOAT32, count=1))    
+
+    if is_color:
+        rospc.fields.append(PointField(
+                        name="rgb",
+                        offset=12,
+                        datatype=PointField.UINT32, count=1))    
+        rospc.point_step = 16
+    else:
+        rospc.point_step = 12
+    
+    rospc.is_bigendian = False
+    rospc.row_step = rospc.point_step * n_points
+    rospc.is_dense = True
+    return rospc
+
+
+>>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
 # -- Example of usage
 if __name__ == "__main__":
     rospy.init_node('test_pc_conversion_between_Open3D_and_ROS', anonymous=True)
@@ -169,4 +269,11 @@ if __name__ == "__main__":
 
     # draw
     open3d.draw_geometries([received_open3d_cloud])
+<<<<<<< HEAD
     rospy.loginfo("-- Finish display. The program is terminating ...\n")
+=======
+    rospy.loginfo("-- Finish display. The program is terminating ...\n")
+
+
+    
+>>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
