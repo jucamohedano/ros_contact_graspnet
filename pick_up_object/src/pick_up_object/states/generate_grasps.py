@@ -26,7 +26,7 @@ class GenerateGrasps(smach.State):
         userdata.prev = 'GenerateGrasps'
 
         # grasps_resp = self.predict_full_scene()
-        grasps_resp = generate_grasps()
+        grasps_resp = self.generate_grasps()
         
         self.try_num += 1
 

@@ -46,12 +46,7 @@ class GenerateGeometricGrasps(smach.State):
         print(obj.header.frame_id)
         # obj = tf_transform('base_footprint', pointcloud=obj).target_pointcloud
         # move to those poses to get the pointclouds
-
-        config = dict()
-        config['goal_orien_tol'] = 0.1
-        config['goal_pos_tol'] = 0.1
-        config['max_velocity'] = 1.
-        self.arm_torso.configure_planner(config)
+        self.arm_torso.configure_planner()
         pcd = []
         pcd.append(obj) # append the pointcloud of the object itself since we have it already
         for i, pose in enumerate(poses_around_obj.poses):
@@ -87,6 +82,7 @@ class GenerateGeometricGrasps(smach.State):
                 
         
 
+        exit(1)
         if pose_count > 0:
             userdata.grasps_resp = grasps_resp
             return 'succeeded'
@@ -134,5 +130,3 @@ class GenerateGeometricGrasps(smach.State):
             return resp
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
-    
-    
