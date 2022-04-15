@@ -1,0 +1,3 @@
+sensor_msgs/PointCloud2 object_cloud
+---
+geometry_msgs/PoseArray target_poses
