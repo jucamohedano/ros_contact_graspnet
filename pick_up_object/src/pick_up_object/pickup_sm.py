@@ -27,7 +27,7 @@ if __name__ == '__main__':
     with sm:
         smach.StateMachine.add('DetectObjects', DetectObjects(head_controller, torso_controller, arm_torso_controller),
                                 transitions={
-                                    'succeeded': 'GenerateGeometricGrasps',
+                                    'succeeded': 'GenerateGrasps',
                                     'looping': 'DetectObjects',
                                     'failed': 'Recovery'},
                                 remapping={
