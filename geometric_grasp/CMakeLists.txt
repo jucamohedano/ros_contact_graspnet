@@ -60,6 +60,9 @@ catkin_python_setup()
  add_service_files(
    FILES
    PointcloudReconstruction.srv
+   PosesAroundObj.srv
+   PcdLocalFrames.srv
+   AntipodalGrasp.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -70,10 +73,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   geometry_msgs   moveit_msgs   sensor_msgs   std_msgs
- )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs   moveit_msgs   sensor_msgs   std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
