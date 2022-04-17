@@ -8,7 +8,7 @@ class PickupRecovery(smach.State):
     def __init__(self, arm_torso_controller, gripper_controller, planning_scene):
         smach.State.__init__(self,
                              outcomes=['failed'],
-                             input_keys=['prev', 'collision_obj'],
+                             input_keys=['prev', 'collision_objs'],
                              output_keys=['prev'])
         self.arm_torso = arm_torso_controller
         self.gripper = gripper_controller
@@ -18,17 +18,20 @@ class PickupRecovery(smach.State):
 
     def execute(self, userdata):
         
-        userdata.prev = 'PickupRecovery'
+        userdata.prev = 'Pickup'
         # collision_obj = userdata.collision_obj
         
-        self.planning_scene.remove_attached_object(self.eef_link, name='object')
-        self.planning_scene.remove_world_object('object')
+        aobjs = self.planning_scene.get_attached_objects()
+        # rospy.loginfo("Objects attached are {}".format(aobjs.keys()))
+        if aobjs.keys():
+            rospy.loginfo("Removing object_{}".format(aobjs.keys()[0]))
+            self.planning_scene.remove_attached_object(aobjs.keys()[0])
         
-        self.gripper.sync_reach_to(joint1=0.04, joint2=0.04)
-        rospy.sleep(2.)
-        self.arm_torso.sync_shift_ee_frame(shift_frame='base_footprint', z=0.2)
-        rospy.sleep(2.)
-        self.arm_torso.sync_reach_safe_joint_space()
-        play_motion_action('open')
+        # self.gripper.sync_reach_to(joint1=0.04, joint2=0.04)
+        # rospy.sleep(2.)
+        # self.arm_torso.sync_shift_ee_frame(shift_frame='base_footprint', z=0.2)
+        # rospy.sleep(2.)
+        # self.arm_torso.sync_reach_safe_joint_space()
+        # play_motion_action('open')
         
         return 'failed'

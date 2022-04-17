@@ -16,6 +16,8 @@ from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseStamped
 from pcl_manipulation.srv import Euclidian
+from pick_up_object.srv import PosesAroundObj, PointcloudReconstruction, PointcloudReconstructionRequest, PcdLocalFrames, AntipodalGrasp, AntipodalGraspRequest
+
 
 
 def detect_objs():
@@ -231,3 +233,44 @@ def play_motion_action(action='home'):
     
     print(action_ok and state == actionlib.GoalStatus.SUCCEEDED)
     return action_ok and state == actionlib.GoalStatus.SUCCEEDED
+
+
+def get_poses_around_obj(obj):
+    rospy.wait_for_service('find_poses_around_obj', timeout=10)
+    try:
+        find_poses = rospy.ServiceProxy('find_poses_around_obj', PosesAroundObj)
+        resp = find_poses(obj).target_poses
+        print('we have the poses!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def generate_antipodal_grasps(req):
+    rospy.wait_for_service('generate_grasp_candidate_antipodal', timeout=10)
+    try:
+        grasps_server = rospy.ServiceProxy('generate_grasp_candidate_antipodal', AntipodalGrasp)
+        resp = grasps_server(req).candidates
+        print('generate_grasp_candidate_antipodal done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def compute_local_basis(reconstructed_pcd):
+    rospy.wait_for_service('pcd_local_frames', timeout=10)
+    try:
+        reconstruct_pcd = rospy.ServiceProxy('pcd_local_frames', PcdLocalFrames)
+        resp = reconstruct_pcd(reconstructed_pcd).local_basis
+        print('local basis calculation done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def reconstruct_pcd(pointcloud_array):
+    rospy.wait_for_service('reconstruct_pointcloud', timeout=10)
+    try:
+        reconstruct_pcd = rospy.ServiceProxy('reconstruct_pointcloud', PointcloudReconstruction)
+        resp = reconstruct_pcd(pointcloud_array).full_reconstructed_pcd
+        print('reconstruction done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)

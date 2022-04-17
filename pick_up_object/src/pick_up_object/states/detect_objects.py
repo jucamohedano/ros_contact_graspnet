@@ -18,7 +18,7 @@ class DetectObjects(smach.State):
         self.head_controller = head_controller
         self.torso_controller = torso_controller
         self.arm_torso_controller = arm_torso_controller
-        self.retry_attempts = 3
+        self.retry_attempts = 2
         self.try_num = 0
         self.detector = self._detectRCNN if detector == 'rcnn' else self._detectPCL
 

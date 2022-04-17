@@ -10,10 +10,13 @@ class PickupObject_SM():
         self.gripper = gripper_controller
         self.planning_scene = self.arm_torso._scene
 
-        self.sm = smach.StateMachine(input_keys=['prev', 'objs_resp', 'grasps_resp', 'collision_obj'], 
+        self.sm = smach.StateMachine(input_keys=['prev', 'objs_resp', 'grasps_resp', 'collision_objs', 'object_index'],
+                                    output_keys=['prev'],
                                     outcomes=['success','failed'])
         sis = smach_ros.IntrospectionServer('pickup_sm', self.sm, '/SM_PICKUP_TOP/SM_PICKUP_SUB')
         sis.start()
+
+        
 
     def add_states(self):
         
@@ -25,15 +28,17 @@ class PickupObject_SM():
                                     remapping={
                                         'prev': 'prev',
                                         'grasps_resp' : 'grasps_resp',
-                                        'collision_obj' : 'collision_obj'
+                                        'collision_objs' : 'collision_objs',
+                                        'object_index' : 'object_index'
                                         })
             smach.StateMachine.add('ShiftForward', ShiftForward(self.arm_torso, self.gripper, self.planning_scene),
                                     transitions={
                                         'succeeded': 'GraspObject',
-                                        'failed': 'PickupRecovery',},
+                                        'failed': 'PickupRecovery'},
                                     remapping={
                                         'prev' : 'prev',
-                                        'collision_obj' : 'collision_obj'
+                                        'collision_objs' : 'collision_objs',
+                                        'object_index' : 'object_index'
                                         })
             smach.StateMachine.add('GraspObject', GraspObject(self.arm_torso, self.gripper, self.planning_scene),
                                     transitions={
@@ -42,7 +47,8 @@ class PickupObject_SM():
                                     remapping={
                                         'prev': 'prev',
                                         'grasps_resp': 'grasps_resp',
-                                        'collision_obj' : 'collision_obj'
+                                        'collision_objs' : 'collision_objs',
+                                        'object_index' : 'object_index'
                                         })
             smach.StateMachine.add('LiftObject', LiftObject(self.arm_torso, self.planning_scene),
                                     transitions={
@@ -50,7 +56,7 @@ class PickupObject_SM():
                                         'failed': 'PickupRecovery'},
                                     remapping={
                                         'prev': 'prev',
-                                        'collision_obj' : 'collision_obj'
+                                        'collision_objs' : 'collision_objs'
                                         })
             smach.StateMachine.add('PickupRecovery', PickupRecovery(self.arm_torso, self.gripper, self.planning_scene),
                                     transitions={
@@ -58,5 +64,5 @@ class PickupObject_SM():
                                         },
                                     remapping={
                                         'prev' : 'prev',
-                                        'collision_obj' : 'collision_obj'
+                                        'collision_objs' : 'collision_objs'
                                     })

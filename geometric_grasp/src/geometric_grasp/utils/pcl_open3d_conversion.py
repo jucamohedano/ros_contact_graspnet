@@ -30,11 +30,6 @@ import rospy
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
-<<<<<<< HEAD
-=======
-import copy
-import ros_numpy
->>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
 
 # The data structure of each point in ros PointCloud2: 16 bits = x + y + z + rgb
 FIELDS_XYZ = [
@@ -85,11 +80,7 @@ def convertCloudFromRosToOpen3d(ros_cloud):
     cloud_data = list(pc2.read_points(ros_cloud, skip_nans=True, field_names = field_names))
 
     # Check empty
-<<<<<<< HEAD
-    open3d_cloud = open3d.PointCloud()
-=======
     open3d_cloud = open3d.geometry.PointCloud()
->>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
     if len(cloud_data)==0:
         print("Converting an empty cloud")
         return None
@@ -109,13 +100,8 @@ def convertCloudFromRosToOpen3d(ros_cloud):
             rgb = [convert_rgbUint32_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
 
         # combine
-<<<<<<< HEAD
-        open3d_cloud.points = open3d.Vector3dVector(np.array(xyz))
-        open3d_cloud.colors = open3d.Vector3dVector(np.array(rgb)/255.0)
-=======
         open3d_cloud.points = open3d.utility.Vector3dVector(np.array(xyz))
         open3d_cloud.colors = open3d.utility.Vector3dVector(np.array(rgb)/255.0)
->>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
     else:
         xyz = [(x,y,z) for x,y,z in cloud_data ] # get xyz
         open3d_cloud.points = open3d.Vector3dVector(np.array(xyz))
@@ -123,8 +109,6 @@ def convertCloudFromRosToOpen3d(ros_cloud):
     # return
     return open3d_cloud
 
-<<<<<<< HEAD
-=======
 
 def o3dpc_to_rospc(o3dpc, frame_id=None, stamp=None):
     """ convert open3d point cloud to ros point cloud
@@ -204,7 +188,6 @@ def o3dpc_to_rospc(o3dpc, frame_id=None, stamp=None):
     return rospc
 
 
->>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
 # -- Example of usage
 if __name__ == "__main__":
     rospy.init_node('test_pc_conversion_between_Open3D_and_ROS', anonymous=True)
@@ -269,11 +252,7 @@ if __name__ == "__main__":
 
     # draw
     open3d.draw_geometries([received_open3d_cloud])
-<<<<<<< HEAD
-    rospy.loginfo("-- Finish display. The program is terminating ...\n")
-=======
     rospy.loginfo("-- Finish display. The program is terminating ...\n")
 
 
     
->>>>>>> 5330563ef560a55be57fd20c453cdef16da04323

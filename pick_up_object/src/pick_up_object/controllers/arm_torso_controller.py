@@ -21,7 +21,6 @@ from pick_up_object.utils import to_frame_pose, PlanningSceneInterface
 
 class ArmTorsoController:
     def __init__(self):
-        print('***************************************')
         self._listener = tf.TransformListener()
         rospy.sleep(3)
         self._robot = moveit_commander.RobotCommander()

@@ -11,7 +11,7 @@ import tf2_geometry_msgs
 import tf2_sensor_msgs
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Pose, Point, Quaternion
-from pick_up_object.utils import generate_grasps, tf_transform
+from pick_up_object.utils import generate_grasps, tf_transform, get_poses_around_obj, generate_antipodal_grasps
 from pick_up_object.srv import PosesAroundObj, PointcloudReconstruction, PointcloudReconstructionRequest, PcdLocalFrames, AntipodalGrasp, AntipodalGraspRequest
 
 class GenerateGeometricGrasps(smach.State):
@@ -46,7 +46,7 @@ class GenerateGeometricGrasps(smach.State):
         print(obj.header.frame_id)
         # obj = tf_transform('base_footprint', pointcloud=obj).target_pointcloud
         # move to those poses to get the pointclouds
-        self.arm_torso.configure_planner()
+        # self.arm_torso.configure_planner()
         pcd = []
         pcd.append(obj) # append the pointcloud of the object itself since we have it already
         for i, pose in enumerate(poses_around_obj.poses):
@@ -81,8 +81,6 @@ class GenerateGeometricGrasps(smach.State):
         antipodal_grasps = self.generate_antipodal_grasps(req)
                 
         
-
-        exit(1)
         if pose_count > 0:
             userdata.grasps_resp = grasps_resp
             return 'succeeded'
@@ -91,42 +89,4 @@ class GenerateGeometricGrasps(smach.State):
         else:
             return 'failed'
 
-    def get_poses_around_obj(self, obj):
-        rospy.wait_for_service('find_poses_around_obj', timeout=10)
-        try:
-            find_poses = rospy.ServiceProxy('find_poses_around_obj', PosesAroundObj)
-            resp = find_poses(obj).target_poses
-            print('we have the poses!')
-            return resp
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
-
-    def reconstruct_pcd(self, pointcloud_array):
-        rospy.wait_for_service('reconstruct_pointcloud', timeout=10)
-        try:
-            reconstruct_pcd = rospy.ServiceProxy('reconstruct_pointcloud', PointcloudReconstruction)
-            resp = reconstruct_pcd(pointcloud_array).full_reconstructed_pcd
-            print('reconstruction done!')
-            return resp
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
-
-    def compute_local_basis(self, reconstructed_pcd):
-        rospy.wait_for_service('pcd_local_frames', timeout=10)
-        try:
-            reconstruct_pcd = rospy.ServiceProxy('pcd_local_frames', PcdLocalFrames)
-            resp = reconstruct_pcd(reconstructed_pcd).local_basis
-            print('local basis calculation done!')
-            return resp
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
-
-    def generate_antipodal_grasps(self, req):
-        rospy.wait_for_service('generate_grasp_candidate_antipodal', timeout=10)
-        try:
-            grasps_server = rospy.ServiceProxy('generate_grasp_candidate_antipodal', AntipodalGrasp)
-            resp = grasps_server(req).candidates
-            print('generate_grasp_candidate_antipodal done!')
-            return resp
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
+    
