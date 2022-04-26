@@ -25,21 +25,23 @@ class ApproachObject(smach.State):
         
         grasps_poses = userdata.grasps_resp
         object_index = userdata.object_index
-        rospy.loginfo("Approaching object_{}".format(object_index))
-        rospy.loginfo("{} grasps for object_{}".format(len(grasps_poses[object_index].poses), object_index))
+        # object_index = 0
 
-        clear_octomap()
+        rospy.loginfo("Approaching object_{}".format(object_index))
+        # rospy.loginfo("{} grasps for object_{}".format(len(grasps_poses[object_index].poses), object_index))
+
+        
         # grasps_poses.all_grasp_poses[0].header.frame_id='gripper_grasping_frame'
         # print(grasps_poses.all_grasp_poses[0])
         
         # self.arm_torso.update_planning_scene(add=True)
-        self.target_poses_pub.publish(grasps_poses[object_index])
+        # self.target_poses_pub.publish(grasps_poses[object_index])
         # self.arm_torso.configure_planner()
-        if not grasps_poses[object_index].poses:
+        if not grasps_poses[0].poses:
             rospy.loginfo('There are no grasps for object_{}'.format(object_index))
             return 'failed'
-        result = self.arm_torso.sync_reach_ee_poses(grasps_poses[object_index])
-        
+        result = self.arm_torso.sync_reach_ee_poses(grasps_poses[0])
+        clear_octomap()
 
         if not result:
             result='failed'

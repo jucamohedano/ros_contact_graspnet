@@ -36,7 +36,7 @@ class Dropoff(smach.State):
         config['goal_joint_tolerance'] = 0.01
         config['goal_pos_tol'] = 0.01
         config['goal_orien_tol'] = 0.01
-        self.arm_torso.configure_planner(config)
+        # self.arm_torso.configure_planner(config)
 
 
         p = [self.bin['position']['x'], self.bin['position']['y'], self.bin['position']['z']]
@@ -76,7 +76,7 @@ class Dropoff(smach.State):
                     config['goal_joint_tolerance'] = 0.003
                     config['goal_pos_tol'] = 0.001
                     config['goal_orien_tol'] = 0.001
-                    self.arm_torso.configure_planner(config)
+                    # self.arm_torso.configure_planner(config)
                     return 'succeeded'
                     
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:

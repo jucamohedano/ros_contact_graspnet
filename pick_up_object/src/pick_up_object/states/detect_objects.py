@@ -23,6 +23,7 @@ class DetectObjects(smach.State):
         self.detector = self._detectRCNN if detector == 'rcnn' else self._detectPCL
 
     def execute(self, userdata):
+        self.arm_torso_controller._scene.clear()
         userdata.prev = 'DetectObjects'
         self.arm_torso_controller.sync_reach_safe_joint_space()
         # lift torso to get a good top view

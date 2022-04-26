@@ -153,7 +153,7 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200, id=
     Returns:
         co {CollisionObject} -- collision object
     """
-    pcl = tf_transform(target_frame='gripper_grasping_frame', pointcloud=object_cloud).target_pointcloud
+    target_cloud = tf_transform(target_frame='base_footprint', pointcloud=object_cloud).target_pointcloud
 
     # pcl = np.fromstring(object_cloud.data, np.float32)
     # print('pcl shape fromsring = {}'.format(pcl.shape))
@@ -167,7 +167,7 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200, id=
     # cloud_obj['x'] = pcl[:,:,0].flatten()
     # cloud_obj['y'] = pcl[:,:,1].flatten()
     # cloud_obj['z'] = pcl[:,:,2].flatten()
-    pcl = ros_numpy.numpify(object_cloud)
+    pcl = ros_numpy.numpify(target_cloud)
     cloud_obj = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
 
     # add collision object to planning scene
@@ -177,7 +177,7 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200, id=
     # create collision object
     primitive = SolidPrimitive()
     primitive.type = primitive.BOX
-    primitive.dimensions = [0.02, 0.02, 0.02]
+    primitive.dimensions = [0.07, 0.07, 0.07]
 
     indices = np.random.choice(range(pcl.shape[0]), size=np.min([num_primitives, pcl.shape[0]]), replace=False)
     pose_array = PoseArray()
@@ -196,7 +196,21 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200, id=
         co.primitives.append(primitive)
         pose_array.poses.append(primitive_pose)
 
-    co.header = object_cloud.header
+        #hacky
+        # x,y,z = cloud_obj[i]
+        # pp = Pose()
+        # pp.position.x = x
+        # pp.position.y = y
+        # pp.position.z = z+0.15
+        # pp.orientation.x = 0
+        # pp.orientation.y = 0
+        # pp.orientation.z = 0
+        # pp.orientation.w = 1
+
+        # co.primitives.append(primitive)
+        # pose_array.poses.append(pp)
+
+    co.header = target_cloud.header
     co.primitive_poses = pose_array.poses
 
     planning_scene.add_object(co)
@@ -249,7 +263,7 @@ def generate_antipodal_grasps(req):
     rospy.wait_for_service('generate_grasp_candidate_antipodal', timeout=10)
     try:
         grasps_server = rospy.ServiceProxy('generate_grasp_candidate_antipodal', AntipodalGrasp)
-        resp = grasps_server(req).candidates
+        resp = grasps_server(req)
         print('generate_grasp_candidate_antipodal done!')
         return resp
     except rospy.ServiceException as e:

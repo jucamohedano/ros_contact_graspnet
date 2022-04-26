@@ -5,7 +5,6 @@ import rospy
 import smach
 import numpy as np
 import ros_numpy
-import ros_numpy
 import tf2_ros
 import tf2_geometry_msgs
 import tf2_sensor_msgs

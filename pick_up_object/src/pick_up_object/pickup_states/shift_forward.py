@@ -28,18 +28,13 @@ class ShiftForward(smach.State):
         
 
         # self.planning_scene.remove_world_object('object')
-        objs = self.planning_scene.get_objects().keys()
+        # objs = self.planning_scene.get_objects()
         # objs_ids = [obj_id for obj_id in objs.id]
-        # print(objs_ids)
-        self.arm_torso.update_planning_scene(add=True, entry_names=objs)
+        print('planning_scene collision objects {}'.format(self.planning_scene.get_known_object_names()))
+        # self.arm_torso.update_planning_scene(add=True, entry_names=['object_0'])
+        self.arm_torso.update_planning_scene(add=True, entry_names=self.planning_scene.get_known_object_names())
 
-
-        # moveit planner params
-        # config = dict()
-        # config['planning_attempts'] = 10
-        # config['planning_time'] = 0.5
-        # config['num_planning_attempts'] = 10
-        # self.arm_torso.configure_planner(config)
+        
 
         # check that gripper is open
         gripper_state = self.gripper.gripper_state()
@@ -47,29 +42,35 @@ class ShiftForward(smach.State):
             self.gripper.sync_reach_to(self.gripper.JOINT_MAX)
 
         # move forward gripper in gripper_grasping_frame
-        shift = 0.08
+        shift = 0.165
         clear_octomap()
 
-        config = dict()
-        config['goal_joint_tolerance'] = 0.01
-        config['goal_pos_tol'] = 0.01
-        config['goal_orien_tol'] = 0.01
-        self.arm_torso.configure_planner(config)
+        # config = dict()
+        # config['planning_time'] = 0.5
+        # config['goal_joint_tolerance'] = 0.01
+        # config['num_planning_attempts'] = 10
+        # config['goal_pos_tol'] = 0.01
+        # config['goal_orien_tol'] = 0.01
+        # config['max_acceleration'] = 0.1
+        # config['max_velocity'] = 0.1
+        # self.arm_torso.configure_planner(config)
+        # self.arm_torso._move_group.clear_path_constraints()
+        # rospy.sleep(3.5)
 
-        result = self.arm_torso.sync_shift_ee(x=shift)
+        result = self.arm_torso.sync_shift_ee(x=shift, _wait=True)
         if self.ft_sensor == 1:
+            rospy.loginfo('hitting the table but returning True!')
             result = True
             self.ft_sensor = 0
         
 
-        config['goal_joint_tolerance'] = 0.003
-        config['goal_pos_tol'] = 0.001
-        config['goal_orien_tol'] = 0.001
-        self.arm_torso.configure_planner(config)
+        # config['goal_joint_tolerance'] = 0.003
+        # config['goal_pos_tol'] = 0.001
+        # config['goal_orien_tol'] = 0.001
+        # self.arm_torso.configure_planner(config)
 
         rospy.loginfo('shift forward result {}'.format(result))
 
-        rospy.sleep(1.)
 
         if not result:
             result='failed'

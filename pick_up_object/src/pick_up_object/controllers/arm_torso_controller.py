@@ -150,7 +150,7 @@ class ArmTorsoController:
             print('Failed: sync_shift_ee_frame: {}'.format(e))
             return False
 
-    def sync_shift_ee(self, x=0., y=0., z=0.):
+    def sync_shift_ee(self, x=0., y=0., z=0., _wait=True):
         """
         Arguments:
             x, y, z -- direction in the gripper_grasping_frame
@@ -180,7 +180,7 @@ class ArmTorsoController:
             self.debug_pose.publish(curr_pose)
 
             self._move_group.set_start_state_to_current_state()
-            result = self._move_group.go(wait=True)
+            result = self._move_group.go(wait=_wait)
             return result
         except Exception as e:
             print('Failed: sync_shift_ee: {}'.format(e))

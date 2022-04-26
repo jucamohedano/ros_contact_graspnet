@@ -11,6 +11,7 @@ if __name__ == '__main__':
     rospy.init_node('pickup_sm', anonymous=True)
 
     arm_torso_controller = ArmTorsoController()
+    arm_torso_controller._scene.clear()
     gripper_controller = GripperController()
     head_controller = HeadController()
     torso_controller = TorsoController()
@@ -40,7 +41,7 @@ if __name__ == '__main__':
                                     'prev': 'prev',
                                     'objs_resp': 'objs_resp',
                                     })
-        smach.StateMachine.add('GenerateGrasps', GenerateGrasps(arm_torso_controller),
+        smach.StateMachine.add('GenerateGrasps', GenerateGrasps(arm_torso_controller, '_geometricGrasping'),
                                 transitions={
                                     'succeeded': 'DecideGraspsAndObjs',
                                     'looping' : 'DetectObjects',
@@ -49,6 +50,7 @@ if __name__ == '__main__':
                                     'prev' : 'prev',
                                     'objs_resp' : 'objs_resp',
                                     'grasps_resp': 'grasps_resp',
+                                    'object_index' : 'object_index'
                                     })
         
         # smach.StateMachine.add('GenerateGeometricGrasps', GenerateGeometricGrasps(arm_torso_controller),
