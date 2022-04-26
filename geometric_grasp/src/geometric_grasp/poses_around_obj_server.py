@@ -14,7 +14,7 @@ def get_poses(msg):
     o3d_cloud = convertCloudFromRosToOpen3d(msg.object_cloud)
     mean, _ = o3d_cloud.compute_mean_and_covariance()
     
-    pose_array = compute_poses_around_object(mean, msg.object_cloud.header.frame_id, d=0.28)
+    pose_array = compute_poses_around_object(mean, msg.object_cloud.header.frame_id, d=0.10)
     resp.target_poses = pose_array
     return resp
 
@@ -48,7 +48,7 @@ def compute_poses_around_object(pose, frame_id, d=0.25):
 
     ## LEFT POSE
     right_pose = Pose()
-    right_pose.position = Point(pose[0], pose[1]+d, pose[2]+d)
+    right_pose.position = Point(pose[0], pose[1]+d, pose[2]+0.30)
     
     # vectors to mean
     right_new_orientation = np.array([pose[0], pose[1], pose[2]]) - \
@@ -62,7 +62,7 @@ def compute_poses_around_object(pose, frame_id, d=0.25):
 
     # RIGHT POSE
     left_pose = Pose()
-    left_pose.position = Point(pose[0], pose[1]-d, pose[2]+d)
+    left_pose.position = Point(pose[0], pose[1]-d, pose[2]+0.30)
     
     # vectors to mean
     left_new_orientation = np.array([pose[0], pose[1], pose[2]]) - \

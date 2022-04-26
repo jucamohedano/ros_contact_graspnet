@@ -7,4 +7,4 @@ float32 max_x
 float32 max_y
 float32 max_z
 ---
-geometry_msgs/PoseArray candidates
+geometry_msgs/PoseArray[] all_grasp_poses

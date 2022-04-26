@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#!/usr/bin/env python
-=======
 #!/usr/bin/env python3
->>>>>>> 5330563ef560a55be57fd20c453cdef16da04323
 # -*- coding: utf-8 -*-
 
 '''
@@ -30,6 +26,8 @@ import rospy
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
+import copy
+import ros_numpy
 
 # The data structure of each point in ros PointCloud2: 16 bits = x + y + z + rgb
 FIELDS_XYZ = [
