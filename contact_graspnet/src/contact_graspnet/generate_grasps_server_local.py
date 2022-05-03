@@ -115,6 +115,7 @@ def generate_grasps(req):
     pred_grasps_cam, scores, contacts, openings = grasp_estimator.predict_scene_grasps(sess, pc_full=pcl_np, 
                                                                                         pc_segments=objs_np, local_regions=True, 
                                                                                         filter_grasps=True, forward_passes=1)
+
     # loop through each object's pcl and adjust predicted grasps                                                                                  
     for i in range(len(req.objects_pcl)):
         pc_seg_map = tf_transform('map', pointcloud=req.objects_pcl[i]).target_pointcloud
@@ -142,6 +143,57 @@ def generate_grasps(req):
         else: # empty grasps
             response.all_grasp_poses.append(PoseArray())
             response.all_scores.append(0.)
+
+    if pose_array_full:
+        grasps_all.publish(pose_array_full)
+
+    print('generated grasps!')
+    return response
+
+
+def generate_grasps_full_scene(req):
+    """
+    Arguments:
+        req {GenerateGrasps} -- message container full_pcl and objs_pcl
+    Return:
+        response {GenerateGraspsResponse} -- number_objects, all_grasp_poses, grasp_contact_points, object_heights, all_scores 
+    """
+    
+    frame_id = req.full_pcl.header.frame_id
+
+    # reshape pcl to be in the right form to be processed
+    pcl = ros_numpy.numpify(req.full_pcl)
+    pcl_np = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
+
+    # camera matrix from topic '/xtion/depth_registered/camera_info'
+    # K = [522.1910329546544, 0.0, 320.5, 0.0, 522.1910329546544, 240.5, 0.0, 0.0, 1.0]
+
+    response = GenerateGraspsResponse()
+    pose_array_full = None
+
+    print('Generating Grasps...')
+    pred_grasps_cam, scores, contacts, openings = grasp_estimator.predict_grasps(sess, pcl_np, 
+                                                constant_offset=False, convert_cam_coords=True, forward_passes=1)
+
+    # loop through each object's pcl and adjust predicted grasps                                                                                  
+    if not pred_grasps_cam.size == 0:
+        pose_array = convert_opencv_to_tiago(frame_id=frame_id, grasps=pred_grasps_cam)
+        pose_array = shift_grasps_ee(pose_array)
+        # pose_array = tf_transform('base_footprint', pose_array).target_pose_array
+        response.all_grasp_poses.append(pose_array)
+        response.all_scores.append(np.nanmean(scores) if np.nanmean(scores) != np.nan else 0.)
+        if np.isnan(np.nanmean(scores)):
+            print(scores)
+            print(np.nanmean(scores))
+            print('nan scores: {}, object: {}'.format(scores, 0))
+
+        if pose_array_full is None:
+            pose_array_full = deepcopy(pose_array)
+        else:
+            pose_array_full.poses += pose_array.poses
+    else: # empty grasps
+        response.all_grasp_poses.append(PoseArray())
+        response.all_scores.append(0.)
 
     if pose_array_full:
         grasps_all.publish(pose_array_full)
@@ -193,7 +245,7 @@ def convert_opencv_to_tiago(frame_id, grasps):
     return pose_array
 
 
-def shift_grasps_ee(original_pose_array, delta=-0.025):
+def shift_grasps_ee(original_pose_array, delta=-0.1):
     """
     Arguments 
         original_pose_array {PoseArray}

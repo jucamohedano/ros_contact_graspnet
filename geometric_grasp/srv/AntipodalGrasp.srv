@@ -1,0 +1,10 @@
+sensor_msgs/PointCloud2[] object_clouds
+geometry_msgs/PoseArray target_poses
+float32 min_x
+float32 min_y
+float32 min_z
+float32 max_x
+float32 max_y
+float32 max_z
+---
+geometry_msgs/PoseArray[] all_grasp_poses

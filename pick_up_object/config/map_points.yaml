@@ -1,0 +1,60 @@
+base_green_bin:
+  position: 
+    x: 0.193727733863
+    y: -0.813990989832
+    z: 0.0
+  orientation: 
+    x: 0.0
+    y: 0.0
+    z: -0.996034624394
+    w: 0.0889664375374
+
+table_left:
+  name: 'table_left'
+  position: 
+    x: 0.779004187011
+    y: 1.17522903816
+    z: 0.0
+  orientation: 
+    x: 0.0
+    y: 0.0
+    z: 0.179638725388
+    w: 0.983732650846
+
+table_right:
+  name: 'table_right'
+  position: 
+    x: 0.969779177408
+    y: 0.748348655804
+    z: 0.0
+  orientation: 
+    x: 0.0
+    y: 0.0
+    z: 0.158846184758
+    w: 0.987303342235
+
+
+tall_table:
+  name: 'tall_table'
+  position: 
+    x: 0.461189895959
+    y: 1.82169204128
+    z: 0.0
+  orientation: 
+    x: 0.0
+    y: 0.0
+    z: 0.185160051519
+    w: 0.982708377557
+
+
+  # position: 
+  #   x: 0.367548353578
+  #   y: 1.85033969791
+  #   z: 0.0
+  # orientation: 
+  #   x: 0.0
+  #   y: 0.0
+  #   z: 0.185291511265
+  #   w: 0.982683599056
+
+

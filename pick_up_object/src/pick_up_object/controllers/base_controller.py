@@ -10,7 +10,6 @@ from geometry_msgs.msg import Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from tf2_py import TransformException
-from typing import Tuple, Optional, Union, Sequence
 
 
 class BaseController:
@@ -55,23 +54,23 @@ class BaseController:
         self._goal_sent = True
         self._client.send_goal(goal, done_cb=self._goto_done_cb)
 
-    def sync_reach_to(self, position, radians=0, degrees=None, wait=60):
+    def sync_reach_to(self, position, quaternion, wait=60):
         # type: (Optional[Sequence[float,float]], Optional[float], Optional[float], int) -> Union[bool,int]
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
-        if degrees is not None:
-            theta = math.radians(degrees)
-        else:
-            theta = radians
-        quaternion = quaternion_from_euler(0, 0, theta)
+        # if degrees is not None:
+        #     theta = math.radians(degrees)
+        # else:
+        #     theta = radians
+        # quaternion = quaternion_from_euler(0, 0, theta)
 
-        quaternion = {'r1': 0.000, 'r2': 0.000, 'r3': quaternion[2], 'r4': quaternion[3]}
+        # quaternion = {'r1': 0.000, 'r2': 0.000, 'r3': quaternion[2], 'r4': quaternion[3]}
 
         goal.target_pose.pose = Pose(Point(position[0], position[1], 0.000),
-                                     Quaternion(quaternion['r1'], quaternion['r2'], quaternion['r3'], quaternion['r4']))
+                                     Quaternion(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
 
-        rospy.loginfo("base is going to (%.2f, %.2f, %.2f) pose", position[0], position[1], theta)
+        # rospy.loginfo("base is going to (%.2f, %.2f, %.2f) pose", position[0], position[1], theta)
 
         self._goal_sent = True
         self._client.send_goal(goal)

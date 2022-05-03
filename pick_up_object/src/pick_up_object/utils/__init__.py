@@ -5,4 +5,9 @@ from pick_up_object.utils.servers_clients import clear_octomap
 from pick_up_object.utils.servers_clients import play_motion_action
 from pick_up_object.utils.servers_clients import add_collision_object
 from pick_up_object.utils.servers_clients import to_frame_pose
+from pick_up_object.utils.servers_clients import detect_clusters
 from pick_up_object.utils.planning_scene_interface import PlanningSceneInterface
+from pick_up_object.utils.servers_clients import generate_antipodal_grasps
+from pick_up_object.utils.servers_clients import get_poses_around_obj
+from pick_up_object.utils.servers_clients import compute_local_basis
+from pick_up_object.utils.servers_clients import reconstruct_pcd

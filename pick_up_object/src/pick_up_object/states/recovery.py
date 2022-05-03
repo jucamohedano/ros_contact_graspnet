@@ -6,23 +6,35 @@ class Recovery(smach.State):
     
     def __init__(self):
         smach.State.__init__(self,
-                             outcomes=['succeeded', 'failed', 'restart', 'restart_object_detection'],
-                             input_keys = ['prev'])
+                             outcomes=['failed', 'restart', 'change_grasps'],
+                             input_keys = ['prev'], 
+                             output_keys = ['prev'])
         self.restart_count = 0
 
     def execute(self, userdata):
-
-        if self.restart_count > 3:
+    
+        if self.restart_count == 20:
+            userdata.prev = 'Recovery'
             return 'failed'
 
         if userdata.prev == 'DetectObjects':
             self.restart_count += 1
+            userdata.prev = 'Recovery'
             return 'restart'
 
         if userdata.prev == 'GenerateGrasps':
             self.restart_count += 1
+            userdata.prev = 'Recovery'
             return 'restart'
 
         if userdata.prev == 'Pickup':
             self.restart_count += 1
-            return 'restart_object_detection'
+            userdata.prev = 'Recovery'
+            return 'change_grasps'
+
+        if userdata.prev == 'DecideGraspsAndObjs':
+            self.restart_count += 1
+            userdata.prev = 'Recovery'
+            return 'restart'
+
+    
