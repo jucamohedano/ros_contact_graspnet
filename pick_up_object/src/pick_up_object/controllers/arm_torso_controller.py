@@ -22,12 +22,14 @@ from pick_up_object.utils import to_frame_pose, PlanningSceneInterface
 class ArmTorsoController:
     def __init__(self):
         self._listener = tf.TransformListener()
+        rospy.sleep(3)
         self._robot = moveit_commander.RobotCommander()
         # self._group = moveit_commander.MoveGroupCommander('')
         group_name = "arm_torso"
         if not self._robot.has_group(group_name):
             raise RuntimeError("the move_group [arm_torso] is not found")
         self._move_group = self._robot.get_group(group_name)
+        print(self._move_group)
 
         self._joints = self._move_group.get_joints()
         self._scene = PlanningSceneInterface()
@@ -92,9 +94,9 @@ class ArmTorsoController:
         eef_link = config.get('eef_link', 'gripper_grasping_frame')
         allow_replanning = config.get('allow_replanning', True)
         goal_pos_tol = config.get('goal_pos_tol', 0.001)
-        goal_orien_tol = config.get('goal_orien_tol', 0.0001)
+        goal_orien_tol = config.get('goal_orien_tol', 0.001)
         goal_joint_tol = config.get('goal_joint_tolerance', 0.001)
-        max_velocity = config.get('max_velocity', 0.3)
+        max_velocity = config.get('max_velocity', 0.9)
         max_acceleration = config.get('max_acceleration', 0.4)
         pose_frame = config.get('pose_frame', None)
 
@@ -107,10 +109,10 @@ class ArmTorsoController:
         self._move_group.allow_replanning(allow_replanning)
         self._move_group.set_max_velocity_scaling_factor(max_velocity)
         self._move_group.set_max_acceleration_scaling_factor(max_acceleration)
-        if goal_pos_tol:
-            self._move_group.set_goal_position_tolerance(goal_pos_tol)
         if goal_orien_tol:
             self._move_group.set_goal_orientation_tolerance(goal_orien_tol)
+        if goal_pos_tol:
+            self._move_group.set_goal_position_tolerance(goal_pos_tol)
         if goal_joint_tol:
             self._move_group.set_goal_joint_tolerance(goal_joint_tol)
         if pose_frame:
@@ -128,7 +130,7 @@ class ArmTorsoController:
 
         try:
             curr_pose = self._move_group.get_current_pose()
-            curr_pose.pose = self.to_frame_pose(curr_pose.pose, source_frame=curr_pose.header.frame_id, target_frame=shift_frame)
+            curr_pose.pose = to_frame_pose(curr_pose.pose, source_frame=curr_pose.header.frame_id, target_frame=shift_frame)
             curr_pose.header.frame_id = shift_frame
 
             curr_pose.pose.position.x += x
@@ -138,7 +140,7 @@ class ArmTorsoController:
             self._move_group.set_pose_target(curr_pose)
 
             # publish pose for debugging purposes
-            print('Publishing debug_plan_pose')
+            # print('Publishing debug_plan_pose')
             self.debug_pose.publish(curr_pose)
 
             self._move_group.set_start_state_to_current_state()
@@ -148,7 +150,7 @@ class ArmTorsoController:
             print('Failed: sync_shift_ee_frame: {}'.format(e))
             return False
 
-    def sync_shift_ee(self, x=0., y=0., z=0.):
+    def sync_shift_ee(self, x=0., y=0., z=0., _wait=True):
         """
         Arguments:
             x, y, z -- direction in the gripper_grasping_frame
@@ -174,11 +176,11 @@ class ArmTorsoController:
 
             self._move_group.set_pose_target(curr_pose)
             # publish pose for debugging purposes
-            print('Publishing debug_plan_pose')
+            # print('Publishing debug_plan_pose')
             self.debug_pose.publish(curr_pose)
 
             self._move_group.set_start_state_to_current_state()
-            result = self._move_group.go(wait=True)
+            result = self._move_group.go(wait=_wait)
             return result
         except Exception as e:
             print('Failed: sync_shift_ee: {}'.format(e))
@@ -232,7 +234,6 @@ class ArmTorsoController:
             return result
         except Exception as e:
             print('Failed: sync_reach_ee_poses: {}'.format(e))
-            print(len(posearray.poses))
             return False
 
     def sync_reach_safe_joint_space(self):
@@ -240,7 +241,7 @@ class ArmTorsoController:
             Predefined pose with arm and torso stretched
         """
 
-        return self.sync_reach_joint_space(0.35, (0.07, 0.92, 0.16, 0.85, -1.62, 0.03, 0.46))
+        return self.sync_reach_joint_space(0.35, (0.07, 0.92, 0.16, 0.85, -1.62, 0.03, 1.74))
 
     def sync_reach_joint_space(self, torso_goal=None, arm_goals=None):
         """
@@ -273,7 +274,7 @@ class ArmTorsoController:
             self._move_group.stop()
         return result
 
-    def update_planning_scene(self, add=True):
+    def update_planning_scene(self, add=True, entry_names=['object']):
         """
         Arguments:
             add {bool} -- To add object to the collision matrix from the planning scene            
@@ -284,10 +285,11 @@ class ArmTorsoController:
         scene = self.get_planning_scene(request).scene
         acm = scene.allowed_collision_matrix
         print(acm.default_entry_names)
+        print('received entry names {}'.format(entry_names))
 
         if add and not 'object' in acm.default_entry_names:
-            acm.default_entry_names += ['object']
-            acm.default_entry_values += [True]
+            acm.default_entry_names += entry_names
+            acm.default_entry_values += [True for name in entry_names]
             # new_planning_scene = PlanningScene(is_diff=True, allowed_collision_matrix=acm)
             # self._pubPlanningScene.publish(planning_scene_diff)
             # self.apply_planning_scene(planning_scene_diff)

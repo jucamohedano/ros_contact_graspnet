@@ -5,14 +5,19 @@ import numpy as np
 import tf2_ros
 import tf2_geometry_msgs
 import actionlib
+import tf2_ros
+import ros_numpy
 
 from pick_up_object.srv import GenerateGrasps, TfTransform, TfTransformRequest, DetectObjects
 from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
 from geometry_msgs.msg import Pose, PoseArray
-from moveit_msgs.msg import CollisionObject
+from moveit_msgs.msg import CollisionObject, AttachedCollisionObject
 from shape_msgs.msg import SolidPrimitive
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseStamped
+from pcl_manipulation.srv import Euclidian
+from pick_up_object.srv import PosesAroundObj, PointcloudReconstruction, PointcloudReconstructionRequest, PcdLocalFrames, AntipodalGrasp, AntipodalGraspRequest
+
 
 
 def detect_objs():
@@ -33,11 +38,29 @@ def detect_objs():
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
+def detect_clusters(pcl):
+    """
+        Calls clustering service
+
+        Return:
+            clusters {Euclidean}
+    """
+
+    print('waiting for detect_objects')
+    rospy.wait_for_service('/pcl_manipulation/cluster', timeout=10)
+    try:
+        detect = rospy.ServiceProxy('/pcl_manipulation/cluster', Euclidian)
+        resp = detect(pcl)
+        print('Clustering done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
 def generate_grasps(full_pcl, objs_pcl):
     """
     Arguments:
-        full_pcl {PointCloud} -- full point cloud of the scene
-        objs_pcl {dict of PointClouds} -- dictionary with each segmented object pointcloud
+        full_pcl {PointCloud2} -- full point cloud of the scene
+        objs_pcl {PointCloud2[]} -- list with each segmented object pointcloud
     
     Return:
         grasps {GenerateGrasps} -- array of grasps
@@ -97,7 +120,7 @@ def tf_transform(target_frame, pose_array=None, pointcloud=None):
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
-def to_frame_pose(self, pose, source_frame='xtion_depth_optical_frame', target_frame='base_footprint'):
+def to_frame_pose(pose, source_frame='xtion_depth_optical_frame', target_frame='base_footprint'):
     """
     Arguments:
         pose {Pose} -- pose to convert
@@ -106,12 +129,12 @@ def to_frame_pose(self, pose, source_frame='xtion_depth_optical_frame', target_f
     Return:
         pose {Pose} -- target pose
     """
-    
+    tfBuffer = tf2_ros.Buffer()
     # remove '/' from source_frame and target frame to avoid tf2.InvalidArgumentException
     source_frame = source_frame.replace('/', '')
     target_frame = target_frame.replace('/', '')
     try:
-        transformation = self.tfBuffer.lookup_transform(target_frame, source_frame,
+        transformation = tfBuffer.lookup_transform(target_frame, source_frame,
         rospy.Time(0), rospy.Duration(0.1))
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
         print(e)
@@ -119,7 +142,7 @@ def to_frame_pose(self, pose, source_frame='xtion_depth_optical_frame', target_f
     pose = tf2_geometry_msgs.do_transform_pose(PoseStamped(pose=pose), transformation).pose
     return pose
 
-def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
+def add_collision_object(object_cloud, planning_scene, num_primitives = 200, id='object'):
     """
     adds collision object to the planning scene created by moveit
 
@@ -130,27 +153,31 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
     Returns:
         co {CollisionObject} -- collision object
     """
+    target_cloud = tf_transform(target_frame='base_footprint', pointcloud=object_cloud).target_pointcloud
 
-    pcl = np.fromstring(object_cloud.data, np.float32)
-    pcl = pcl.reshape(object_cloud.height, object_cloud.width, -1)
-    
-    cloud_obj = np.zeros(pcl.shape[0], dtype=[
-        ('x', np.float32),
-        ('y', np.float32),
-        ('z', np.float32)
-    ])
-    cloud_obj['x'] = pcl[:,:,0].flatten()
-    cloud_obj['y'] = pcl[:,:,1].flatten()
-    cloud_obj['z'] = pcl[:,:,2].flatten()
+    # pcl = np.fromstring(object_cloud.data, np.float32)
+    # print('pcl shape fromsring = {}'.format(pcl.shape))
+    # pcl = pcl.reshape(object_cloud.height, object_cloud.width, -1)
+    # print('pcl shape after reshape = {}'.format(pcl.shape))
+    # cloud_obj = np.zeros(pcl.shape[0], dtype=[
+    #     ('x', np.float32),
+    #     ('y', np.float32),
+    #     ('z', np.float32)
+    # ])
+    # cloud_obj['x'] = pcl[:,:,0].flatten()
+    # cloud_obj['y'] = pcl[:,:,1].flatten()
+    # cloud_obj['z'] = pcl[:,:,2].flatten()
+    pcl = ros_numpy.numpify(target_cloud)
+    cloud_obj = np.concatenate( (pcl['x'].reshape(-1,1), pcl['y'].reshape(-1,1), pcl['z'].reshape(-1,1)), axis=1)
 
     # add collision object to planning scene
     co = CollisionObject()
-    co.id = 'object'
+    co.id = id
 
     # create collision object
     primitive = SolidPrimitive()
     primitive.type = primitive.BOX
-    primitive.dimensions = [0.02, 0.02, 0.02]
+    primitive.dimensions = [0.07, 0.07, 0.07]
 
     indices = np.random.choice(range(pcl.shape[0]), size=np.min([num_primitives, pcl.shape[0]]), replace=False)
     pose_array = PoseArray()
@@ -169,12 +196,24 @@ def add_collision_object(object_cloud, planning_scene, num_primitives = 200):
         co.primitives.append(primitive)
         pose_array.poses.append(primitive_pose)
 
-    # pose_array = tf_transform(pose_array)
-    co.header = object_cloud.header
+        #hacky
+        # x,y,z = cloud_obj[i]
+        # pp = Pose()
+        # pp.position.x = x
+        # pp.position.y = y
+        # pp.position.z = z+0.15
+        # pp.orientation.x = 0
+        # pp.orientation.y = 0
+        # pp.orientation.z = 0
+        # pp.orientation.w = 1
+
+        # co.primitives.append(primitive)
+        # pose_array.poses.append(pp)
+
+    co.header = target_cloud.header
     co.primitive_poses = pose_array.poses
 
     planning_scene.add_object(co)
-    rospy.sleep(2.0)
     return co
 
 def play_motion_action(action='home'):
@@ -208,3 +247,44 @@ def play_motion_action(action='home'):
     
     print(action_ok and state == actionlib.GoalStatus.SUCCEEDED)
     return action_ok and state == actionlib.GoalStatus.SUCCEEDED
+
+
+def get_poses_around_obj(obj):
+    rospy.wait_for_service('find_poses_around_obj', timeout=10)
+    try:
+        find_poses = rospy.ServiceProxy('find_poses_around_obj', PosesAroundObj)
+        resp = find_poses(obj).target_poses
+        print('we have the poses!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def generate_antipodal_grasps(req):
+    rospy.wait_for_service('generate_grasp_candidate_antipodal', timeout=10)
+    try:
+        grasps_server = rospy.ServiceProxy('generate_grasp_candidate_antipodal', AntipodalGrasp)
+        resp = grasps_server(req)
+        print('generate_grasp_candidate_antipodal done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def compute_local_basis(reconstructed_pcd):
+    rospy.wait_for_service('pcd_local_frames', timeout=10)
+    try:
+        reconstruct_pcd = rospy.ServiceProxy('pcd_local_frames', PcdLocalFrames)
+        resp = reconstruct_pcd(reconstructed_pcd).local_basis
+        print('local basis calculation done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+def reconstruct_pcd(pointcloud_array):
+    rospy.wait_for_service('reconstruct_pointcloud', timeout=10)
+    try:
+        reconstruct_pcd = rospy.ServiceProxy('reconstruct_pointcloud', PointcloudReconstruction)
+        resp = reconstruct_pcd(pointcloud_array).full_reconstructed_pcd
+        print('reconstruction done!')
+        return resp
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)

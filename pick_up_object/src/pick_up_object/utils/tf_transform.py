@@ -39,8 +39,8 @@ def get_transform(source_frame, target_frame):
         Returns the pose in the target frame
     """
     assert(source_frame and target_frame)
-    print('source_frame', source_frame)
-    print('target_frame', target_frame)
+    # print('source_frame', source_frame)
+    # print('target_frame', target_frame)
     try:
         transformation = tfBuffer.lookup_transform(target_frame, source_frame, rospy.Time(0), rospy.Duration(0.1))
         return transformation
