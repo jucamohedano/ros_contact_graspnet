@@ -2,9 +2,9 @@
 
 Three ROS packages have been developed to implement two different solutions to grasping:
 
-1\.  Contact-Graspnet (https://github.com/NVlabs/contact_graspnet) -- *contact_graspnet* ros package
+  1. [contact_graspnet](https://github.com/jucamohedano/ros_contact_graspnet/tree/main/contact_graspnet) -- ROS Wrapper of [Contact-Graspnet](https://github.com/NVlabs/contact_graspnet) with modifications made to switch from a Panda gripper to the TIAGo gripper
 
-2\.  Analytical grasping approach -- *gemetric_grasp* ros package
+  2. [geometric_grasp](https://github.com/jucamohedano/ros_contact_graspnet/tree/main/geometric_grasp) - A ROS package with an analytical approach to grasping.
 
 Both of these packages are used in the *pick_up_object* state machine ros package.
 
