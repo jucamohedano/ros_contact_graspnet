@@ -17,8 +17,12 @@ Melodic docker container with TensorFlow and Nvidia support. Refer to [tiago_doc
 
 ## How to run it
 
-  1\. `roslaunch contact_graspnet contact_graspnet.launch` or `roslaunch geometric_grasp geometric_grasp.launch`
+  1\. Choose what launch file to launch depending on what method you would like to test: 
+      
+      `roslaunch contact_graspnet contact_graspnet.launch`
+      
+      `roslaunch geometric_grasp geometric_grasp.launch`
 
   2\. `roslaunch pick_up_object pick_up_object.launch`
   
-  3\. In order to switch the different methods of grasping, it must be addressed in the pick_up_object.py
+  3\. In order to switch the different methods of grasping, it must be addressed in the [**generate_grasps**](https://github.com/jucamohedano/ros_contact_graspnet/blob/main/pick_up_object/src/pick_up_object/states/generate_grasps.py) state.
