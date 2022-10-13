@@ -4,8 +4,11 @@ The state machine is composed of the main state machine and a sub-state machine,
 
 ## Main state machine
 
-![Main state machine](https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/state_machine.png)
+<p align="center">
+<img src="https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/state_machine.png" width="500" height="700" class="center">
+</p>
 
 ## Sub-state machine
-
-![Sub-state machine](https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/sub_state_machine.png)
+<p align="center">
+<img src="https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/sub_state_machine.png" width="250" height="450" class="center">
+</p>
