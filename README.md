@@ -26,3 +26,17 @@ Melodic docker container with TensorFlow and Nvidia support. Refer to [tiago_doc
   2\. `roslaunch pick_up_object pick_up_object.launch`
   
   3\. In order to switch the different methods of grasping, it must be addressed in the [**generate_grasps**](https://github.com/jucamohedano/ros_contact_graspnet/blob/main/pick_up_object/src/pick_up_object/states/generate_grasps.py) state.
+
+## Pick up pipeline
+
+Overview of the full pipeline to grasp an object.
+
+![System overview](https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/system_overview.png)
+
+## Image demonstration of Contact-GraspNet inference
+
+![Contact-GraspNet predictions](https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/contact_graspnet_inference_example.png)
+
+## Image demonstration of the Analytical approach grasps prediction
+
+![Geometric-grasping predictions](https://raw.githubusercontent.com/jucamohedano/ros_contact_graspnet/master/docs/analytical_method_example.png)
